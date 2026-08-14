@@ -1,0 +1,116 @@
+# dsh-memory-cbdc
+
+DeepSeek Harness 的本地长期记忆插件。它把稳定信息保存为可撤销的
+Claim，并在每次模型调用前执行 CBDC（Claim → Belief → Decision →
+Consumption）门控，避免“检索到”直接等于“注入模型”。
+
+这是社区插件，不属于 DeepSeek 官方项目。许可证为 [MIT](LICENSE)。
+
+Lightweight local long-term memory for DeepSeek Harness: SQLite-only,
+cross-session recall, bounded context injection, no extra model call.
+
+当前版本：`0.1.1`。目标 Harness：`0.1.0-rc.6`，Node.js `>=22.5`。
+
+## v1 能力
+
+- SQLite + FTS5 本地存储，不调用 embedding 或外部记忆 API。
+- 双通道召回：少量可信全局偏好/约束组成记忆胶囊，其余记忆通过
+  英文词项、中文二元词组、轻量同义线索和标签触发。
+- session、workspace、global 三种作用域；workspace 路径只保存哈希键。
+- 显式 `/memory` 管理命令和保守的中英文自动提取。
+- 可解释的 `use`、`verify`、`ignore` 决策与完整检索/注入审计。
+- `shadow`、`assist`、`enforce` 三种运行模式，默认保守 `assist`。
+- 默认最多注入 3 条、1200 字符；不增加第二次模型调用。
+- API Key、Token、密码和私钥样式内容在落库前拒绝。
+- 数据库或策略异常时不阻断 Agent，只省略本次记忆注入。
+
+## 安装
+
+Harness 的插件管理依赖 `pnpm`。
+
+Linux / WSL：
+
+```bash
+npm install -g pnpm
+dsh plugin --profile web add git+https://github.com/GIT121995/dsh-memory-cbdc-plugin.git
+dsh web --dump-config | sed -n '/memory-cbdc/,+18p'
+```
+
+Windows PowerShell：
+
+```powershell
+npm install -g pnpm
+dsh plugin --profile web add git+https://github.com/GIT121995/dsh-memory-cbdc-plugin.git
+dsh web
+```
+
+安装后重启正在运行的 `dsh web`。Bundle 默认写入
+`$DSH_HOME/memory/cbdc.sqlite`，并以保守 `assist` 模式启动。每次模型调用仍
+只有原来的一次；插件只在本地检索，并把最多 3 条相关记忆放入该次调用的上下文。
+
+在 `$DSH_HOME/profiles/web/cordis.patch.yml` 中持久调整模式时，后置覆盖
+必须重述该插件拥有的完整配置：
+
+```yaml
+- id: memory-cbdc
+  config:
+    databasePath: !!js dshHomePath('memory/cbdc.sqlite')
+    mode: assist
+    automaticExtraction: true
+    candidateLimit: 16
+    capsuleLimit: 2
+    injectionLimit: 3
+    maxInjectionChars: 1200
+    auditRetentionRuns: 5000
+    minUseBelief: 0.7
+    maxUseRisk: 0.45
+    harmfulQuarantineThreshold: 2
+    freshnessHalfLifeDays: 180
+```
+
+## 使用
+
+```text
+/memory status
+/memory list 10
+/memory remember --kind preference 我偏好简洁中文回答
+/memory remember --global --kind constraint 不要在回复中暴露凭据
+/memory search 简洁中文
+/memory explain mem_<uuid>
+/memory feedback mem_<uuid> helped
+/memory forget mem_<uuid>
+/memory mode assist
+```
+
+`/memory list` 显示当前 session/workspace/global 作用域内最近的活跃记忆。
+`/memory mode` 只修改当前进程；重启后回到 Profile 配置。`forget` 是可审计
+的 tombstone，不会物理删除历史记录。
+
+模式语义：
+
+- `shadow`：计算并审计，零模型可见注入。
+- `assist`：注入 `use`，并把 `verify` 明确标为待核验线索；默认模式。
+- `enforce`：只注入 `use`，省略 `verify` 和 `ignore`。
+
+## 开发与验证
+
+```bash
+npm install
+npm run check
+npm pack --dry-run
+```
+
+发布前的三轮基准中位数（Node.js 22.22.1，1001 条合成记忆，每轮 300
+次查询）：WSL 磁盘上的触发检索 p95 `5.343ms`，包含 CBDC 决策和 SQLite
+审计的完整召回 p95 `11.151ms`，三轮最大观测 p95 `11.663ms`。基准不会
+访问真实记忆数据库，也不会调用模型，详见
+[性能基准](docs/benchmark.md)。
+
+召回和安全边界见 [架构说明](docs/architecture.md)。
+
+## v1 限制
+
+- 轻量同义线索只能覆盖常用表达，不等价于通用语义检索。
+- 自动提取只识别明显的“记住、以后、I prefer、always”等表达，宁缺毋滥。
+- 不回填安装前的历史会话，也不重复保存完整 Harness transcript。
+- Node.js 22 会为内置 `node:sqlite` 打印 experimental warning，不影响运行。

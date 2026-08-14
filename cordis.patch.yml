@@ -1,0 +1,14 @@
+- insert:
+    - id: memory-cbdc
+      name: dsh-memory-cbdc
+      inject:
+        - commands
+      config:
+        databasePath: !!js dshHomePath('memory/cbdc.sqlite')
+        mode: assist
+        automaticExtraction: true
+        candidateLimit: 16
+        capsuleLimit: 2
+        injectionLimit: 3
+        maxInjectionChars: 1200
+        auditRetentionRuns: 5000
