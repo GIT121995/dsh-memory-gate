@@ -53,6 +53,14 @@ dsh web
 dsh plugin --profile web add git+https://github.com/GIT121995/dsh-memory-gate.git#v0.2.0
 ```
 
+卸载：
+
+```bash
+dsh plugin --profile web remove dsh-memory-gate
+```
+
+卸载后重启 `dsh web`。记忆数据保留在 `$DSH_HOME/memory/cbdc.sqlite`，重装即可继续使用；如要彻底清除，删除该文件即可。
+
 安装后重启正在运行的 `dsh web`。Bundle 默认写入
 `$DSH_HOME/memory/cbdc.sqlite`（文件名沿用 CBDC 机制名），并以保守 `assist`
 模式启动。每次模型调用仍只有原来的一次；插件只在本地检索，并把最多 3 条
