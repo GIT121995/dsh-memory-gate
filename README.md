@@ -9,7 +9,7 @@ Consumption）门控，避免“检索到”直接等于“注入模型”。
 Lightweight local long-term memory for DeepSeek Harness: SQLite-only,
 cross-session recall, bounded context injection, no extra model call.
 
-当前版本：`0.1.1`。目标 Harness：`0.1.0-rc.6`，Node.js `>=22.5`。
+当前版本：`0.1.2`。目标 Harness：`0.1.0-rc.6`，Node.js `>=22.5`。
 
 ## v1 能力
 
@@ -32,7 +32,7 @@ Linux / WSL：
 
 ```bash
 npm install -g pnpm
-dsh plugin --profile web add git+https://github.com/GIT121995/dsh-memory-cbdc-plugin.git
+dsh plugin --profile web add git+https://github.com/GIT121995/dsh-memory-cbdc-plugin.git#v0.1.2
 dsh web --dump-config | sed -n '/memory-cbdc/,+18p'
 ```
 
@@ -40,7 +40,7 @@ Windows PowerShell：
 
 ```powershell
 npm install -g pnpm
-dsh plugin --profile web add git+https://github.com/GIT121995/dsh-memory-cbdc-plugin.git
+dsh plugin --profile web add git+https://github.com/GIT121995/dsh-memory-cbdc-plugin.git#v0.1.2
 dsh web
 ```
 

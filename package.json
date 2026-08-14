@@ -1,6 +1,6 @@
 {
   "name": "dsh-memory-cbdc",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Local long-term memory with CBDC authority gating for DeepSeek Harness",
   "private": true,
   "license": "MIT",
@@ -40,8 +40,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "check": "npm run typecheck && npm run build",
-    "prepare": "npm run build"
+    "check": "npm run typecheck && npm run build"
   },
   "engines": {
     "node": ">=22.5"

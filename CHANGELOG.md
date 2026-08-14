@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.2 - 2026-08-14
+
+- Remove the unnecessary install-time `prepare` script so pnpm 10 can install
+  the Git-hosted plugin without an `onlyBuiltDependencies` exception.
+- Pin the documented Git install command to the tested release tag.
+
 ## 0.1.1 - 2026-08-14
 
 - Default to conservative assist mode with a 3-claim/1200-character budget.
