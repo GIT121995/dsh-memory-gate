@@ -1,7 +1,7 @@
 {
   "name": "dsh-memory-gate",
-  "version": "0.2.0",
-  "description": "Local long-term memory with CBDC authority gating for DeepSeek Harness",
+  "version": "0.2.1",
+  "description": "Retrieved ≠ injected: CBDC-gated local long-term memory for DeepSeek Harness (SQLite + FTS5, bounded recall, auditable, no extra model call)",
   "license": "MIT",
   "repository": {
     "type": "git",

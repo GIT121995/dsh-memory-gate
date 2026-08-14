@@ -17,7 +17,7 @@ every recall passes CBDC (Claim → Belief → Decision → Consumption)
 authority gating before it can enter context. SQLite-only, bounded
 (≤3 claims / 1200 chars by default), auditable, no extra model call.
 
-当前版本：`0.2.0`。目标 Harness：`0.1.0-rc.6`，Node.js `>=22.5`。
+当前版本：`0.2.1`。目标 Harness：`0.1.0-rc.6`，Node.js `>=22.5`。
 
 ## v1 能力
 
@@ -55,7 +55,7 @@ dsh web
 也可以用 Git 地址安装并锁定版本：
 
 ```bash
-dsh plugin --profile web add git+https://github.com/GIT121995/dsh-memory-gate.git#v0.2.0
+dsh plugin --profile web add git+https://github.com/GIT121995/dsh-memory-gate.git#v0.2.1
 ```
 
 卸载：

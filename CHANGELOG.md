@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.1 - 2026-08-14
+
+- Docs-only release: lead with the "retrieved ≠ injected" positioning in the
+  README, package description, and GitHub repository description.
+- Document plugin removal (`dsh plugin --profile web remove dsh-memory-gate`)
+  and the retention of the SQLite memory file across uninstall.
+
 ## 0.2.0 - 2026-08-14
 
 - Rename the plugin, package, and repository from `dsh-memory-cbdc` to
