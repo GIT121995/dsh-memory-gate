@@ -1,16 +1,21 @@
 # dsh-memory-gate（记忆闸门）
 
-> 前身是 `dsh-memory-cbdc`（v0.1.x）；v0.2.0 起更名为 **dsh-memory-gate**，
-> CBDC 保留为机制名（见下）。旧仓库地址仍会重定向到本仓库。
+> 核心立场：**检索到 ≠ 注入**。前身是 `dsh-memory-cbdc`（v0.1.x）；
+> v0.2.0 起更名为 **dsh-memory-gate**，CBDC 保留为机制名（见下）。
+> 旧仓库地址仍会重定向到本仓库。
 
-DeepSeek Harness 的本地长期记忆插件。它把稳定信息保存为可撤销的
-Claim，并在每次模型调用前执行 CBDC（Claim → Belief → Decision →
-Consumption）门控，避免“检索到”直接等于“注入模型”。
+DeepSeek Harness 的本地长期记忆插件，核心立场是**检索到 ≠ 注入**：
+它把稳定信息保存为可撤销的 Claim，并在每次模型调用前执行 CBDC
+（Claim → Belief → Decision → Consumption）权威门控，每条记忆都要
+经过裁决才能进入上下文。有界（默认 ≤3 条 / 1200 字符）、全程可审计、
+不增加第二次模型调用。
 
 这是社区插件，不属于 DeepSeek 官方项目。许可证为 [MIT](LICENSE)。
 
-Lightweight local long-term memory for DeepSeek Harness: SQLite-only,
-cross-session recall, bounded context injection, no extra model call.
+Local long-term memory for DeepSeek Harness — **retrieved ≠ injected**:
+every recall passes CBDC (Claim → Belief → Decision → Consumption)
+authority gating before it can enter context. SQLite-only, bounded
+(≤3 claims / 1200 chars by default), auditable, no extra model call.
 
 当前版本：`0.2.0`。目标 Harness：`0.1.0-rc.6`，Node.js `>=22.5`。
 
