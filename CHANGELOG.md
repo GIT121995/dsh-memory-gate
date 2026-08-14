@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.1 - 2026-08-14
+
+- Numbered feedback UX: injected claims are labeled `#1`, `#2`, … inside the
+  recall block; `/memory feedback` (no args) lists the latest injection with
+  those numbers; `/memory feedback <#n> <outcome>` targets one of them; and
+  the one-keystroke `/memory ok [#n]` shortcut marks them helped. The legacy
+  claim-id feedback syntax still works.
+
 ## 0.3.0 - 2026-08-14
 
 - Retrieval quality (zero new dependencies, still no extra model call):

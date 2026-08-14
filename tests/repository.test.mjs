@@ -1,7 +1,13 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { MemoryRepository } from '../lib/index.js'
+import { MemoryRepository, MemoryService } from '../lib/index.js'
+
+const TEST_CONFIG = {
+  mode: 'assist', automaticExtraction: true, candidateLimit: 16, capsuleLimit: 2,
+  injectionLimit: 3, maxInjectionChars: 1200, auditRetentionRuns: 5000,
+  minUseBelief: 0.7, maxUseRisk: 0.45, harmfulQuarantineThreshold: 2, freshnessHalfLifeDays: 180,
+}
 
 test('fresh database migrates to schema v2 with FTS terms column', () => {
   const repository = new MemoryRepository(':memory:')
@@ -75,6 +81,40 @@ test('helped feedback attaches query terms and future paraphrases match', () => 
     const results = repository.search('发布相关的内容', ['s1'], 5)
     assert.ok(results.length > 0)
     assert.ok(results[0].claim.id === claim.id)
+  } finally {
+    repository.close()
+  }
+})
+
+test('prepareRecall labels injected claims with #n for feedback', () => {
+  const repository = new MemoryRepository(':memory:')
+  try {
+    const service = new MemoryService(repository, TEST_CONFIG)
+    service.remember('用户偏好簡潔中文回答', { scope: 'global', scopeKey: 'global', kind: 'preference' })
+    const recall = service.prepareRecall({ query: '请用简短的中文答复我', sessionId: 's1', sessionScopeKey: 's1' })
+    assert.ok(recall, 'expected an injection')
+    assert.match(recall.text, /\[USE #1 /)
+  } finally {
+    repository.close()
+  }
+})
+
+test('latestInjection returns the most recent injection for numbered feedback', () => {
+  const repository = new MemoryRepository(':memory:')
+  try {
+    const { claim } = repository.remember({
+      scope: 'session',
+      scopeKey: 's1',
+      kind: 'fact',
+      content: '编号反馈测试',
+      origin: 'explicit',
+    })
+    const runId = repository.recordRetrieval('查询', 'sess', 'ws', 1)
+    repository.recordInjection(runId, 'sess', 'assist', [claim.id], 'msg_1')
+    const latest = repository.latestInjection('sess')
+    assert.ok(latest)
+    assert.deepEqual(latest.claimIds, [claim.id])
+    assert.equal(repository.latestInjection('other-session'), undefined)
   } finally {
     repository.close()
   }

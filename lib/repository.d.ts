@@ -24,6 +24,12 @@ export declare class MemoryRepository {
     recordRetrieval(query: string, sessionId: string, workspaceKey: string, candidateCount: number): string;
     recordDecisions(runId: string, decisions: AuthorityDecision[]): void;
     recordInjection(runId: string, sessionId: string, mode: string, claimIds: string[], messageId: string): string;
+    /** Most recent injection for a session, for the numbered feedback flow. */
+    latestInjection(sessionId: string): {
+        id: string;
+        claimIds: string[];
+        createdAt: number;
+    } | undefined;
     recordConsumption(claimId: string, outcome: ConsumptionOutcome, sessionId: string, detail?: string): Belief;
     /**
      * Feedback loop: a claim marked `helped` inherits the term set of recent

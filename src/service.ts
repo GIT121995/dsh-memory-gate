@@ -143,7 +143,7 @@ export class MemoryService {
       const candidate = byId.get(decision.claimId)
       if (!candidate) continue
       const label = decision.action === 'verify' ? 'VERIFY' : 'USE'
-      const line = `- [${label} ${candidate.claim.id} ${candidate.claim.kind}] ${sanitizeInjection(candidate.claim.content)}`
+      const line = `- [${label} #${claimIds.length + 1} ${candidate.claim.id} ${candidate.claim.kind}] ${sanitizeInjection(candidate.claim.content)}`
       if ([...lines, line, '</long_term_memory>'].join('\n').length > this.config.maxInjectionChars) break
       lines.push(line)
       claimIds.push(candidate.claim.id)
@@ -167,6 +167,10 @@ export class MemoryService {
 
   feedback(claimId: string, outcome: ConsumptionOutcome, sessionId: string, detail?: string) {
     return this.repository.recordConsumption(claimId, outcome, sessionId, detail)
+  }
+
+  latestInjection(sessionId: string) {
+    return this.repository.latestInjection(sessionId)
   }
 }
 

@@ -17,7 +17,7 @@ every recall passes CBDC (Claim → Belief → Decision → Consumption)
 authority gating before it can enter context. SQLite-only, bounded
 (≤3 claims / 1200 chars by default), auditable, no extra model call.
 
-当前版本：`0.3.0`。目标 Harness：`0.1.0-rc.6`，Node.js `>=22.5`。
+当前版本：`0.3.1`。目标 Harness：`0.1.0-rc.6`，Node.js `>=22.5`。
 
 ## v1 能力
 
@@ -60,7 +60,7 @@ dsh web
 也可以用 Git 地址安装并锁定版本：
 
 ```bash
-dsh plugin --profile web add git+https://github.com/GIT121995/dsh-memory-gate.git#v0.3.0
+dsh plugin --profile web add git+https://github.com/GIT121995/dsh-memory-gate.git#v0.3.1
 ```
 
 卸载：
@@ -105,7 +105,10 @@ dsh plugin --profile web remove dsh-memory-gate
 /memory remember --global --kind constraint 不要在回复中暴露凭据
 /memory search 简洁中文
 /memory explain mem_<uuid>
-/memory feedback mem_<uuid> helped
+/memory feedback                 # 列出最近注入的记忆（带 #n 编号）
+/memory feedback 1 helped        # 按编号反馈
+/memory ok                       # 最近注入的记忆全部记为 helped（常用）
+/memory ok 2                     # 只反馈其中第 2 条
 /memory forget mem_<uuid>
 /memory mode assist
 ```
@@ -113,6 +116,11 @@ dsh plugin --profile web remove dsh-memory-gate
 `/memory list` 显示当前 session/workspace/global 作用域内最近的活跃记忆。
 `/memory mode` 只修改当前进程；重启后回到 Profile 配置。`forget` 是可审计
 的 tombstone，不会物理删除历史记录。
+
+反馈（`feedback` / `ok`）是记忆学习的入口：`helped` 会把当次查询的区分性
+词项学进该条记忆的触发词，让以后的换说法也能命中；`harmful`/`stale` 会
+降低置信度并触发隔离。注入文本里每条记忆带 `#n` 编号，直接对应
+`/memory feedback <#n> ...` 的编号。
 
 模式语义：
 

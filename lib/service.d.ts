@@ -36,6 +36,11 @@ export declare class MemoryService {
     list(scopeKeys: string[], limit?: number): SearchCandidate[];
     forget(claimId: string, scopeKeys: string[]): boolean;
     feedback(claimId: string, outcome: ConsumptionOutcome, sessionId: string, detail?: string): import("./contracts.js").Belief;
+    latestInjection(sessionId: string): {
+        id: string;
+        claimIds: string[];
+        createdAt: number;
+    } | undefined;
 }
 export declare function parseClaimKind(value: string | undefined): ClaimKind | undefined;
 export declare function parseClaimScope(value: string | undefined): ClaimScope | undefined;

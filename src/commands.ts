@@ -12,7 +12,9 @@ const USAGE = [
   '/memory search <query>',
   '/memory explain <claim-id>',
   '/memory forget <claim-id>',
-  '/memory feedback <claim-id> <helped|harmful|stale|conflict|unknown> [detail]',
+  '/memory ok [#n]',
+  '/memory feedback',
+  '/memory feedback <#n> <helped|harmful|stale|conflict|unknown> [detail]',
   '/memory mode <shadow|assist|enforce>',
 ].join('\n')
 
@@ -139,6 +141,34 @@ export function executeMemoryCommand(service: MemoryService, agent: Agent, rawIn
           : error('Active memory claim not found in the current scopes.')
       }
       case 'feedback': {
+        const sessionId = String(agent.session.id)
+        if (tokens.length === 0) {
+          const injection = service.latestInjection(sessionId)
+          if (!injection) return success('No memory has been injected in this session yet.')
+          const lines = [`Latest injection (${relativeTime(injection.createdAt)}):`]
+          for (const [index, claimId] of injection.claimIds.entries()) {
+            const claim = service.repository.getClaim(claimId, scopeKeys)
+            if (!claim) continue
+            lines.push(`  #${index + 1} [${claim.kind}] ${truncate(claim.content, 120)}`)
+          }
+          lines.push('Usage: /memory feedback <#n> <helped|harmful|stale|conflict|unknown> [detail] — or /memory ok to mark all helped')
+          return success(lines.join('\n'))
+        }
+        const first = tokens[0] ?? ''
+        if (/^#?\d+$/.test(first)) {
+          const injection = service.latestInjection(sessionId)
+          if (!injection) return error('No memory has been injected in this session yet.')
+          const index = Number(first.replace('#', ''))
+          const claimId = injection.claimIds[index - 1]
+          if (!claimId) return error(`The latest injection has ${injection.claimIds.length} claim(s); #${index} does not exist.`)
+          const outcome = tokens[1] as ConsumptionOutcome | undefined
+          if (!outcome || !['helped', 'harmful', 'stale', 'conflict', 'unknown'].includes(outcome)) {
+            return error('Usage: /memory feedback <#n> <helped|harmful|stale|conflict|unknown> [detail]')
+          }
+          const detail = tokens.slice(2).join(' ').trim()
+          const belief = service.feedback(claimId, outcome, sessionId, detail || undefined)
+          return success(`Feedback recorded for #${index}; belief=${(belief.alpha / (belief.alpha + belief.beta)).toFixed(3)}.`)
+        }
         const claimId = tokens.shift()
         const outcome = tokens.shift() as ConsumptionOutcome | undefined
         if (!claimId || !outcome || !['helped', 'harmful', 'stale', 'conflict', 'unknown'].includes(outcome)) {
@@ -147,8 +177,29 @@ export function executeMemoryCommand(service: MemoryService, agent: Agent, rawIn
         const claim = service.repository.getClaim(claimId, scopeKeys)
         if (!claim) return error('Memory claim not found in the current scopes.')
         const detail = tokens.join(' ').trim()
-        const belief = service.feedback(claimId, outcome, String(agent.session.id), detail || undefined)
+        const belief = service.feedback(claimId, outcome, sessionId, detail || undefined)
         return success(`Feedback recorded for ${claimId}; belief=${(belief.alpha / (belief.alpha + belief.beta)).toFixed(3)}.`)
+      }
+      case 'ok': {
+        const sessionId = String(agent.session.id)
+        const injection = service.latestInjection(sessionId)
+        if (!injection || injection.claimIds.length === 0) return error('No memory has been injected in this session yet.')
+        const maybeIndex = tokens[0]
+        const targets = maybeIndex !== undefined && /^#?\d+$/.test(maybeIndex)
+          ? [injection.claimIds[Number(maybeIndex.replace('#', '')) - 1]].filter((id): id is string => id !== undefined)
+          : injection.claimIds
+        if (targets.length === 0) return error(`The latest injection has ${injection.claimIds.length} claim(s); #${maybeIndex} does not exist.`)
+        const updated: string[] = []
+        for (const claimId of targets) {
+          try {
+            service.feedback(claimId, 'helped', sessionId)
+            updated.push(claimId)
+          } catch {
+            // Best effort: one stale claim should not block the rest.
+          }
+        }
+        if (updated.length === 0) return error('Feedback could not be recorded for any claim.')
+        return success(`Recorded helped for ${updated.length} memory claim(s). Thanks — memory is learning.`)
       }
       default:
         return error(`Unknown memory operation: ${operation}\n${USAGE}`)
@@ -224,6 +275,16 @@ function tokenize(value: string): string[] {
 
 function truncate(value: string, length: number): string {
   return value.length <= length ? value : `${value.slice(0, length - 1)}…`
+}
+
+function relativeTime(timestamp: number): string {
+  const seconds = Math.max(0, Math.round((Date.now() - timestamp) / 1000))
+  if (seconds < 60) return 'just now'
+  const minutes = Math.round(seconds / 60)
+  if (minutes < 60) return `${minutes} min ago`
+  const hours = Math.round(minutes / 60)
+  if (hours < 24) return `${hours} h ago`
+  return `${Math.round(hours / 24)} d ago`
 }
 
 function success(text: string): CommandResult {

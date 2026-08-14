@@ -274,6 +274,15 @@ export class MemoryRepository {
     return id
   }
 
+  /** Most recent injection for a session, for the numbered feedback flow. */
+  latestInjection(sessionId: string): { id: string; claimIds: string[]; createdAt: number } | undefined {
+    const row = this.db
+      .prepare('SELECT id, claim_ids_json, created_at FROM injections WHERE session_id = ? ORDER BY created_at DESC, id DESC LIMIT 1')
+      .get(sessionId) as Row | undefined
+    if (!row) return undefined
+    return { id: String(row.id), claimIds: parseJsonArray(row.claim_ids_json), createdAt: Number(row.created_at) }
+  }
+
   recordConsumption(claimId: string, outcome: ConsumptionOutcome, sessionId: string, detail?: string): Belief {
     const claim = this.getClaim(claimId)
     if (!claim || claim.state !== 'active') throw new Error('Active memory claim not found')
