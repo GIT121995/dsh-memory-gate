@@ -16,6 +16,10 @@ export interface Claim {
     origin: ClaimOrigin;
     sensitivity: 'normal' | 'private';
     contentHash: string;
+    /** Normalized retrieval terms derived from content + tags at write time. */
+    terms: string[];
+    /** Terms learned from confirmed-helpful queries (feedback loop). */
+    learnedTerms: string[];
     sourceSessionId?: string;
     sourceEventSeq?: number;
     validFrom: number;

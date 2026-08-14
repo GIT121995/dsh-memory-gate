@@ -125,6 +125,8 @@ export function executeMemoryCommand(service: MemoryService, agent: Agent, rawIn
             `${claim.id}: ${claim.content}`,
             `scope=${readableScopeKey(claim.scopeKey)}, kind=${claim.kind}, state=${claim.state}, origin=${claim.origin}`,
             `belief=${(belief.alpha / (belief.alpha + belief.beta)).toFixed(3)} (alpha=${belief.alpha}, beta=${belief.beta}, harmful=${belief.harmfulCount})`,
+            `terms=${claim.terms.length}: ${claim.terms.slice(0, 8).join(', ')}${claim.terms.length > 8 ? '…' : ''}`,
+            ...(claim.learnedTerms.length > 0 ? [`learned=${claim.learnedTerms.length}: ${claim.learnedTerms.slice(0, 8).join(', ')}${claim.learnedTerms.length > 8 ? '…' : ''}`] : []),
             `evidence=${evidence.length}; latest=${evidence[0]?.kind ?? 'none'}`,
           ].join('\n'),
         )

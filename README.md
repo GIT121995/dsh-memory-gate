@@ -17,13 +17,18 @@ every recall passes CBDC (Claim → Belief → Decision → Consumption)
 authority gating before it can enter context. SQLite-only, bounded
 (≤3 claims / 1200 chars by default), auditable, no extra model call.
 
-当前版本：`0.2.1`。目标 Harness：`0.1.0-rc.6`，Node.js `>=22.5`。
+当前版本：`0.3.0`。目标 Harness：`0.1.0-rc.6`，Node.js `>=22.5`。
 
 ## v1 能力
 
 - SQLite + FTS5 本地存储，不调用 embedding 或外部记忆 API。
 - 双通道召回：少量可信全局偏好/约束组成记忆胶囊，其余记忆通过
   英文词项、中文二元词组、轻量同义线索和标签触发。
+- **写时触发词**：落库时抽取归一化词项（繁→简、全角→半角、停用词过滤），
+  同义词组双向折叠（如 简洁/concise、部署/deploy），换一种说法也能召回。
+- **反馈回灌**：`/memory feedback <id> helped` 会把当次查询的区分性词项
+  学进该条记忆的触发词（只存词项、不存查询原文），越用越准，全部可在
+  `/memory explain` 里审计。
 - session、workspace、global 三种作用域；workspace 路径只保存哈希键。
 - 显式 `/memory` 管理命令和保守的中英文自动提取。
 - 可解释的 `use`、`verify`、`ignore` 决策与完整检索/注入审计。
@@ -55,7 +60,7 @@ dsh web
 也可以用 Git 地址安装并锁定版本：
 
 ```bash
-dsh plugin --profile web add git+https://github.com/GIT121995/dsh-memory-gate.git#v0.2.1
+dsh plugin --profile web add git+https://github.com/GIT121995/dsh-memory-gate.git#v0.3.0
 ```
 
 卸载：
@@ -133,7 +138,7 @@ npm pack --dry-run
 
 ## v1 限制
 
-- 轻量同义线索只能覆盖常用表达，不等价于通用语义检索。
+- 同义/触发词召回仍是词法级：只覆盖常见表达，不等价于通用语义检索；繁→简映射覆盖常见繁体字。
 - 自动提取只识别明显的“记住、以后、I prefer、always”等表达，宁缺毋滥。
 - 不回填安装前的历史会话，也不重复保存完整 Harness transcript。
 - Node.js 22 会为内置 `node:sqlite` 打印 experimental warning，不影响运行。

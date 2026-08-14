@@ -71,8 +71,9 @@ Belief。每次非 unknown 更新同时写 Evidence。
 - `injections`：实际进入上下文的 Claim ID 与生成消息 ID；
 - `consumption`：人工结果与可选说明。
 
-数据库使用 `PRAGMA user_version=1` 做幂等迁移，写入用同步短事务。文件目录
-权限创建为 `0700`；SQLite WAL 只用于磁盘数据库。
+数据库使用 `PRAGMA user_version` 做幂等迁移（当前 schema v2），写入用同步
+短事务。文件目录权限创建为 `0700`；SQLite WAL 只用于磁盘数据库。v1 → v2
+迁移在原地补列并回填触发词、重建 FTS 索引，不重建数据表。
 
 ## 4. 检索与 CBDC 决策
 
@@ -81,8 +82,20 @@ Belief。每次非 unknown 更新同时写 Evidence。
 - capsule：最多 2 条可信的 explicit global preference/constraint，不要求当前
   查询复述关键词；
 - trigger：查询当前 session、当前 workspace 和 explicit global，先限制最多
-  500 条活跃 Claim，再结合 FTS5、英文词项、中文二元词组、常用同义线索和
-  标签重排。
+  500 条活跃 Claim，再结合 FTS5 与归一化词项重排。
+
+词项工程（`src/text.ts`，写入侧与查询侧共用一套归一化）：
+
+1. **归一化**：NFKC（全角→半角）、小写化、常见繁体→简体映射、停用词过滤；
+2. **词项**：英文词项（≥2 字符）+ 中文二元词组（含停用字的词组丢弃）；
+3. **同义折叠**：双语同义词组把成员折叠成稳定的 `recall_alias_<id>` 令牌，
+   跨表达、跨语种都能命中；
+4. **写时落库**：`claims.terms_json` 保存归一化词项（上限 80），FTS 表的
+   `terms` 列直接索引它们——繁简/全角差异在写入时就被消除；
+5. **反馈回灌**：`helped` 反馈时，从近 14 天注入过该 Claim 的检索运行里
+   收集查询词项（上限 20 次运行、40 个词项，只存词项不存查询原文），写入
+   `claims.learned_terms_json` 并重索引——记忆越用越准，且全过程可经
+   `/memory explain` 审计。
 
 两个通道按 Claim ID 合并后统一进入 CBDC。最终排序权重：
 

@@ -25,6 +25,13 @@ export declare class MemoryRepository {
     recordDecisions(runId: string, decisions: AuthorityDecision[]): void;
     recordInjection(runId: string, sessionId: string, mode: string, claimIds: string[], messageId: string): string;
     recordConsumption(claimId: string, outcome: ConsumptionOutcome, sessionId: string, detail?: string): Belief;
+    /**
+     * Feedback loop: a claim marked `helped` inherits the term set of recent
+     * retrieval runs it was injected into, so future paraphrases of those
+     * queries match. Only normalized terms are stored — never raw query text.
+     */
+    private learnFromFeedback;
+    private reindexClaim;
     pruneAudit(maxRuns: number): number;
     stats(): MemoryStats;
     private count;
@@ -32,6 +39,13 @@ export declare class MemoryRepository {
     private searchFtsIds;
     private indexClaim;
     private migrate;
+    /**
+     * Schema v2: write-time trigger terms, learned feedback terms, and query
+     * term capture. Existing rows are backfilled from content + tags, and the
+     * FTS index is rebuilt with the extra `terms` column.
+     */
+    private upgradeToV2;
+    private ensureFts;
     private transaction;
 }
 export declare function normalizeContent(value: string): string;

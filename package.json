@@ -1,6 +1,6 @@
 {
   "name": "dsh-memory-gate",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Retrieved ≠ injected: CBDC-gated local long-term memory for DeepSeek Harness (SQLite + FTS5, bounded recall, auditable, no extra model call)",
   "license": "MIT",
   "repository": {
@@ -42,7 +42,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "check": "npm run typecheck && npm run build"
+    "check": "npm run typecheck && npm run build",
+    "test": "npm run build && node --test tests/text.test.mjs tests/repository.test.mjs"
   },
   "engines": {
     "node": ">=22.5"

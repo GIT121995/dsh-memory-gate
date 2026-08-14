@@ -12,4 +12,5 @@ export { inspectForSecrets, redactForLog } from './redaction.js';
 export { MemoryRepository } from './repository.js';
 export { sessionScopeKey, workspaceScopeKey } from './scope.js';
 export { MemoryService } from './service.js';
+export { extractTerms, mergeLearnedTerms, normalizeForTerms, SYNONYM_GROUPS } from './text.js';
 //# sourceMappingURL=index.d.ts.map

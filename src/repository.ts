@@ -13,11 +13,17 @@ import type {
   NewClaim,
   SearchCandidate,
 } from './contracts.js'
+import { buildFtsQuery, extractTerms, mergeLearnedTerms } from './text.js'
 
 type SqlValue = string | number | bigint | null | Uint8Array
 type Row = Record<string, SqlValue>
 
-const SCHEMA_VERSION = 1
+const SCHEMA_VERSION = 2
+const CLAIM_TERM_LIMIT = 80
+const QUERY_TERM_LIMIT = 24
+const LEARNED_TERM_LIMIT = 40
+const LEARNED_RUN_LIMIT = 20
+const LEARNED_LOOKBACK_MS = 14 * 86_400_000
 
 export class MemoryRepository {
   readonly databasePath: string
@@ -71,6 +77,8 @@ export class MemoryRepository {
       origin: input.origin,
       sensitivity: input.sensitivity ?? 'normal',
       contentHash,
+      terms: extractTerms(`${content} ${uniqueTags(input.tags ?? []).join(' ')}`, CLAIM_TERM_LIMIT),
+      learnedTerms: [],
       ...(input.sourceSessionId === undefined ? {} : { sourceSessionId: input.sourceSessionId }),
       ...(input.sourceEventSeq === undefined ? {} : { sourceEventSeq: input.sourceEventSeq }),
       validFrom: input.validFrom ?? now,
@@ -85,8 +93,8 @@ export class MemoryRepository {
           `INSERT INTO claims (
              id, scope, scope_key, kind, content, tags_json, state, origin,
              sensitivity, content_hash, source_session_id, source_event_seq,
-             valid_from, valid_until, created_at, updated_at
-           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+             valid_from, valid_until, created_at, updated_at, terms_json, learned_terms_json
+           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         )
         .run(
           claim.id,
@@ -105,6 +113,8 @@ export class MemoryRepository {
           claim.validUntil ?? null,
           claim.createdAt,
           claim.updatedAt,
+          JSON.stringify(claim.terms),
+          JSON.stringify(claim.learnedTerms),
         )
       const alpha = claim.origin === 'explicit' ? 6 : 4
       const beta = claim.origin === 'explicit' ? 1 : 2
@@ -174,11 +184,15 @@ export class MemoryRepository {
       .all(...scopeKeys, Date.now(), Date.now(), scanLimit) as Row[]
 
     const ftsIds = this.searchFtsIds(query, scopeKeys, scanLimit)
-    const queryTerms = terms(query)
+    const queryTerms = extractTerms(query, QUERY_TERM_LIMIT)
     return rows
       .map((row) => {
         const claim = rowToClaim(row)
-        const lexicalScore = lexicalSimilarity(queryTerms, claim.content, claim.tags, ftsIds.has(claim.id))
+        const stored = [...claim.terms, ...claim.learnedTerms]
+        const candidateTerms = new Set(
+          stored.length > 0 ? stored : extractTerms(`${claim.content} ${claim.tags.join(' ')}`, CLAIM_TERM_LIMIT),
+        )
+        const lexicalScore = lexicalSimilarity(queryTerms, candidateTerms, ftsIds.has(claim.id))
         const belief = rowToBelief(row)
         return { claim, belief, recallChannel: 'trigger' as const, lexicalScore, freshnessScore: 0, rankScore: lexicalScore }
       })
@@ -219,9 +233,9 @@ export class MemoryRepository {
     const id = `run_${randomUUID()}`
     this.db
       .prepare(
-        'INSERT INTO retrieval_runs (id, query_hash, session_id, workspace_key, candidate_count, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+        'INSERT INTO retrieval_runs (id, query_hash, query_terms_json, session_id, workspace_key, candidate_count, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
       )
-      .run(id, hashContent(query), sessionId, workspaceKey, candidateCount, Date.now())
+      .run(id, hashContent(query), JSON.stringify(extractTerms(query, QUERY_TERM_LIMIT)), sessionId, workspaceKey, candidateCount, Date.now())
     return id
   }
 
@@ -286,10 +300,62 @@ export class MemoryRepository {
           .prepare('INSERT INTO evidence (id, claim_id, kind, weight, detail, session_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
           .run(`ev_${randomUUID()}`, claimId, outcome, delta.alpha || delta.beta, detail ?? null, sessionId, now)
       }
+      if (outcome === 'helped') this.learnFromFeedback(claimId)
     })
     const belief = this.getBelief(claimId)
     if (!belief) throw new Error('Memory belief update failed')
     return belief
+  }
+
+  /**
+   * Feedback loop: a claim marked `helped` inherits the term set of recent
+   * retrieval runs it was injected into, so future paraphrases of those
+   * queries match. Only normalized terms are stored — never raw query text.
+   */
+  private learnFromFeedback(claimId: string): void {
+    const claimRow = this.db
+      .prepare('SELECT terms_json, learned_terms_json FROM claims WHERE id = ?')
+      .get(claimId) as Row | undefined
+    if (!claimRow) return
+    const since = Date.now() - LEARNED_LOOKBACK_MS
+    const runRows = this.db
+      .prepare(
+        `SELECT r.query_terms_json FROM retrieval_runs r
+         JOIN injections i ON i.run_id = r.id
+         JOIN json_each(i.claim_ids_json) je ON je.value = ?
+         WHERE r.created_at >= ?
+         ORDER BY r.created_at DESC LIMIT ?`,
+      )
+      .all(claimId, since, LEARNED_RUN_LIMIT) as Row[]
+    const incoming = new Set<string>()
+    for (const row of runRows) {
+      for (const term of parseJsonArray(row.query_terms_json)) incoming.add(term)
+    }
+    const existing = parseJsonArray(claimRow.learned_terms_json)
+    const base = parseJsonArray(claimRow.terms_json)
+    const merged = mergeLearnedTerms(existing, [...incoming], LEARNED_TERM_LIMIT, base)
+    if (!merged.added.length) return
+    this.db
+      .prepare('UPDATE claims SET learned_terms_json = ? WHERE id = ?')
+      .run(JSON.stringify(merged.terms), claimId)
+    this.reindexClaim(claimId)
+  }
+
+  private reindexClaim(claimId: string): void {
+    if (!this.ftsAvailable) return
+    const row = this.db
+      .prepare('SELECT content, tags_json, terms_json, learned_terms_json FROM claims WHERE id = ?')
+      .get(claimId) as Row | undefined
+    if (!row) return
+    this.db.prepare('DELETE FROM claim_fts WHERE claim_id = ?').run(claimId)
+    this.db
+      .prepare('INSERT INTO claim_fts (claim_id, content, tags, terms) VALUES (?, ?, ?, ?)')
+      .run(
+        claimId,
+        String(row.content),
+        parseJsonArray(row.tags_json).join(' '),
+        [...parseJsonArray(row.terms_json), ...parseJsonArray(row.learned_terms_json)].join(' '),
+      )
   }
 
   pruneAudit(maxRuns: number): number {
@@ -354,7 +420,9 @@ export class MemoryRepository {
 
   private indexClaim(claim: Claim): void {
     if (!this.ftsAvailable) return
-    this.db.prepare('INSERT INTO claim_fts (claim_id, content, tags) VALUES (?, ?, ?)').run(claim.id, claim.content, claim.tags.join(' '))
+    this.db
+      .prepare('INSERT INTO claim_fts (claim_id, content, tags, terms) VALUES (?, ?, ?, ?)')
+      .run(claim.id, claim.content, claim.tags.join(' '), [...claim.terms, ...claim.learnedTerms].join(' '))
   }
 
   private migrate(): void {
@@ -443,12 +511,57 @@ export class MemoryRepository {
         `)
       })
     }
+    if (version < 2) this.upgradeToV2()
+    this.ensureFts()
+  }
+
+  /**
+   * Schema v2: write-time trigger terms, learned feedback terms, and query
+   * term capture. Existing rows are backfilled from content + tags, and the
+   * FTS index is rebuilt with the extra `terms` column.
+   */
+  private upgradeToV2(): void {
+    this.transaction(() => {
+      this.db.exec(`
+        ALTER TABLE claims ADD COLUMN terms_json TEXT NOT NULL DEFAULT '[]';
+        ALTER TABLE claims ADD COLUMN learned_terms_json TEXT NOT NULL DEFAULT '[]';
+        ALTER TABLE retrieval_runs ADD COLUMN query_terms_json TEXT NOT NULL DEFAULT '[]';
+      `)
+      const rows = this.db.prepare('SELECT id, content, tags_json FROM claims').all() as Row[]
+      const update = this.db.prepare('UPDATE claims SET terms_json = ? WHERE id = ?')
+      for (const row of rows) {
+        update.run(
+          JSON.stringify(extractTerms(`${String(row.content)} ${parseJsonArray(row.tags_json).join(' ')}`, CLAIM_TERM_LIMIT)),
+          String(row.id),
+        )
+      }
+      this.db.exec('DROP TABLE IF EXISTS claim_fts')
+      this.db.exec('PRAGMA user_version = 2')
+    })
+  }
+
+  private ensureFts(): void {
     try {
-      this.db.exec("CREATE VIRTUAL TABLE IF NOT EXISTS claim_fts USING fts5(claim_id UNINDEXED, content, tags, tokenize='unicode61')")
+      this.db.exec(
+        "CREATE VIRTUAL TABLE IF NOT EXISTS claim_fts USING fts5(claim_id UNINDEXED, content, tags, terms, tokenize='unicode61')",
+      )
       this.ftsAvailable = true
       const row = this.db.prepare('SELECT COUNT(*) AS count FROM claim_fts').get() as Row
       if (Number(row.count) === 0) {
-        this.db.exec("INSERT INTO claim_fts (claim_id, content, tags) SELECT id, content, replace(replace(tags_json, '[', ''), ']', '') FROM claims WHERE state = 'active'")
+        const rows = this.db
+          .prepare("SELECT id, content, tags_json, terms_json, learned_terms_json FROM claims WHERE state = 'active'")
+          .all() as Row[]
+        const insert = this.db.prepare('INSERT INTO claim_fts (claim_id, content, tags, terms) VALUES (?, ?, ?, ?)')
+        this.transaction(() => {
+          for (const claimRow of rows) {
+            insert.run(
+              String(claimRow.id),
+              String(claimRow.content),
+              parseJsonArray(claimRow.tags_json).join(' '),
+              [...parseJsonArray(claimRow.terms_json), ...parseJsonArray(claimRow.learned_terms_json)].join(' '),
+            )
+          }
+        })
       }
     } catch {
       this.ftsAvailable = false
@@ -480,22 +593,8 @@ function uniqueTags(tags: string[]): string[] {
   return [...new Set(tags.map((tag) => tag.trim().toLocaleLowerCase()).filter(Boolean))].slice(0, 20)
 }
 
-function terms(value: string): string[] {
-  const normalized = value.toLocaleLowerCase().normalize('NFKC')
-  const latin = normalized.match(/[\p{Script=Latin}\p{N}_-]{2,}/gu) ?? []
-  const hanRuns = normalized.match(/[\p{Script=Han}]+/gu) ?? []
-  const han = hanRuns.flatMap((run) => {
-    if (run.length <= 2) return [run]
-    return Array.from({ length: run.length - 1 }, (_, index) => run.slice(index, index + 2))
-  })
-  const raw = [...latin, ...han]
-  const aliases = raw.flatMap((term) => recallAliases(term))
-  return [...new Set([...raw, ...aliases])]
-}
-
-function lexicalSimilarity(queryTerms: string[], content: string, tags: string[], ftsHit: boolean): number {
+function lexicalSimilarity(queryTerms: string[], candidateTerms: Set<string>, ftsHit: boolean): number {
   if (!queryTerms.length) return 0.5
-  const candidateTerms = new Set(terms(`${content} ${tags.join(' ')}`))
   const matched = queryTerms.filter((term) => candidateTerms.has(term)).length
   const queryCoverage = matched / queryTerms.length
   const candidateCoverage = matched / Math.max(1, candidateTerms.size)
@@ -503,28 +602,14 @@ function lexicalSimilarity(queryTerms: string[], content: string, tags: string[]
   return Math.min(1, overlap * 0.9 + (ftsHit ? 0.1 : 0))
 }
 
-const RECALL_ALIAS_GROUPS = [
-  ['简洁', '简短', '精炼', '扼要', 'concise', 'brief'],
-  ['中文', '汉语', 'chinese'],
-  ['回答', '回复', '答复', 'answer', 'response'],
-  ['偏好', '喜欢', 'prefer', 'preference'],
-  ['项目', '工程', 'project'],
-  ['测试', '验证', 'test', 'verify'],
-] as const
-
-function recallAliases(term: string): string[] {
-  const aliases: string[] = []
-  for (let index = 0; index < RECALL_ALIAS_GROUPS.length; index += 1) {
-    if ((RECALL_ALIAS_GROUPS[index] as readonly string[] | undefined)?.includes(term)) aliases.push(`recall_alias_${index}`)
+function parseJsonArray(value: SqlValue | undefined): string[] {
+  if (value === null || value === undefined) return []
+  try {
+    const parsed: unknown = JSON.parse(String(value))
+    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string') : []
+  } catch {
+    return []
   }
-  return aliases
-}
-
-function buildFtsQuery(value: string): string {
-  return terms(value)
-    .slice(0, 12)
-    .map((term) => `"${term.replaceAll('"', '""')}"`)
-    .join(' OR ')
 }
 
 function rowToClaim(row: Row): Claim {
@@ -534,11 +619,13 @@ function rowToClaim(row: Row): Claim {
     scopeKey: String(row.scope_key),
     kind: String(row.kind) as Claim['kind'],
     content: String(row.content),
-    tags: JSON.parse(String(row.tags_json)) as string[],
+    tags: parseJsonArray(row.tags_json),
     state: String(row.state) as Claim['state'],
     origin: String(row.origin) as Claim['origin'],
     sensitivity: String(row.sensitivity) as Claim['sensitivity'],
     contentHash: String(row.content_hash),
+    terms: parseJsonArray(row.terms_json),
+    learnedTerms: parseJsonArray(row.learned_terms_json),
     ...(row.source_session_id === null || row.source_session_id === undefined ? {} : { sourceSessionId: String(row.source_session_id) }),
     ...(row.source_event_seq === null || row.source_event_seq === undefined ? {} : { sourceEventSeq: Number(row.source_event_seq) }),
     validFrom: Number(row.valid_from),

@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.3.0 - 2026-08-14
+
+- Retrieval quality (zero new dependencies, still no extra model call):
+  - Write-time trigger terms: claims persist normalized retrieval terms
+    (traditional→simplified, full-width→half-width, stopword filtering) with
+    bilingual synonym-group folding via stable `recall_alias_<id>` tokens.
+  - Feedback loop: `/memory feedback <id> helped` attaches the distinctive
+    terms of recent retrieval runs that injected the claim (normalized terms
+    only — never raw query text), so future paraphrases match; auditable via
+    `/memory explain`.
+- Schema v2: adds `claims.terms_json`, `claims.learned_terms_json`, and
+  `retrieval_runs.query_terms_json`; existing databases migrate in place with
+  term backfill and an FTS rebuild.
+- Test suite: `node --test` coverage for normalization, synonym folding,
+  learned-term merging, repository behavior, and the v1→v2 migration.
+
 ## 0.2.1 - 2026-08-14
 
 - Docs-only release: lead with the "retrieved ≠ injected" positioning in the
