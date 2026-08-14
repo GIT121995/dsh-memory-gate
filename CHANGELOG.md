@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.2 - 2026-08-14
+
+- Docs-only release: reposition from storage ("SQLite + FTS5 memory") to
+  usage ("retrieved ≠ injected" — use/verify/ignore decisions, feedback
+  learning, audit) in the README, package description, and repository
+  description. Storage details move to a technical footnote.
+
 ## 0.3.1 - 2026-08-14
 
 - Numbered feedback UX: injected claims are labeled `#1`, `#2`, … inside the

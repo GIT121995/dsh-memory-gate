@@ -4,38 +4,47 @@
 > v0.2.0 起更名为 **dsh-memory-gate**，CBDC 保留为机制名（见下）。
 > 旧仓库地址仍会重定向到本仓库。
 
-DeepSeek Harness 的本地长期记忆插件，核心立场是**检索到 ≠ 注入**：
+DeepSeek Harness 的长期记忆插件，只回答一个问题：**记忆记住了，然后呢？**
 它把稳定信息保存为可撤销的 Claim，并在每次模型调用前执行 CBDC
-（Claim → Belief → Decision → Consumption）权威门控，每条记忆都要
-经过裁决才能进入上下文。有界（默认 ≤3 条 / 1200 字符）、全程可审计、
-不增加第二次模型调用。
+（Claim → Belief → Decision → Consumption）权威门控——每条记忆先经裁决
+（`use` / `verify` / `ignore`），才决定能否进入上下文；使用后的反馈
+（helped/harmful）反向更新置信度，越用越准，全程可审计。默认注入
+≤3 条 / 1200 字符，不增加第二次模型调用。
+
+（存储层：本地 SQLite + FTS5，无 embedding、无外部记忆 API。）
 
 这是社区插件，不属于 DeepSeek 官方项目。许可证为 [MIT](LICENSE)。
 
-Local long-term memory for DeepSeek Harness — **retrieved ≠ injected**:
-every recall passes CBDC (Claim → Belief → Decision → Consumption)
-authority gating before it can enter context. SQLite-only, bounded
-(≤3 claims / 1200 chars by default), auditable, no extra model call.
+Long-term memory for DeepSeek Harness that cares about how memory is
+**used**, not just stored — **retrieved ≠ injected**: every recall passes
+CBDC (Claim → Belief → Decision → Consumption) authority gating and lands
+as an explainable `use` / `verify` / `ignore` decision before it can enter
+context. Post-use feedback updates belief, so memory gets more accurate
+over time — all auditable, bounded (≤3 claims / 1200 chars by default),
+no extra model call. (Local SQLite + FTS5 storage; no embeddings, no
+external memory API.)
 
-当前版本：`0.3.1`。目标 Harness：`0.1.0-rc.6`，Node.js `>=22.5`。
+当前版本：`0.3.2`。目标 Harness：`0.1.0-rc.6`，Node.js `>=22.5`。
 
 ## v1 能力
 
-- SQLite + FTS5 本地存储，不调用 embedding 或外部记忆 API。
-- 双通道召回：少量可信全局偏好/约束组成记忆胶囊，其余记忆通过
-  英文词项、中文二元词组、轻量同义线索和标签触发。
-- **写时触发词**：落库时抽取归一化词项（繁→简、全角→半角、停用词过滤），
-  同义词组双向折叠（如 简洁/concise、部署/deploy），换一种说法也能召回。
-- **反馈回灌**：`/memory feedback <id> helped` 会把当次查询的区分性词项
-  学进该条记忆的触发词（只存词项、不存查询原文），越用越准，全部可在
-  `/memory explain` 里审计。
+- **使用前裁决**：每条记忆注入前过 CBDC（Claim → Belief → Decision →
+  Consumption）权威门控，输出可解释的 `use` / `verify` / `ignore` 决策。
+- **使用中克制**：默认最多注入 3 条、1200 字符；全局偏好走 capsule
+  通道特权注入；不增加第二次模型调用。
+- **使用后学习**：`/memory ok`（或 `feedback <#n> helped`）把当次查询的
+  区分性词项学进触发词（只存词项、不存查询原文），harmful/stale 降低
+  置信度并触发隔离——越用越准，`/memory explain` 全程可审计。
+- **三种运行模式**：`shadow`（只审计零注入）、`assist`（默认，注入 use +
+  标出 verify）、`enforce`（只注入高置信）——按场景切换"怎么用"。
+- 双通道召回：少量可信全局偏好/约束组成记忆胶囊，其余记忆经词项触发。
 - session、workspace、global 三种作用域；workspace 路径只保存哈希键。
 - 显式 `/memory` 管理命令和保守的中英文自动提取。
-- 可解释的 `use`、`verify`、`ignore` 决策与完整检索/注入审计。
-- `shadow`、`assist`、`enforce` 三种运行模式，默认保守 `assist`。
-- 默认最多注入 3 条、1200 字符；不增加第二次模型调用。
-- API Key、Token、密码和私钥样式内容在落库前拒绝。
-- 数据库或策略异常时不阻断 Agent，只省略本次记忆注入。
+
+技术规格：本地 SQLite + FTS5 存储，不调用 embedding 或外部记忆 API；
+写时触发词含繁→简、全角→半角归一与双语同义折叠；API Key、Token、密码
+和私钥样式内容在落库前拒绝；数据库或策略异常时不阻断 Agent，只省略
+本次记忆注入。
 
 ## 安装
 
@@ -60,7 +69,7 @@ dsh web
 也可以用 Git 地址安装并锁定版本：
 
 ```bash
-dsh plugin --profile web add git+https://github.com/GIT121995/dsh-memory-gate.git#v0.3.1
+dsh plugin --profile web add git+https://github.com/GIT121995/dsh-memory-gate.git#v0.3.2
 ```
 
 卸载：
