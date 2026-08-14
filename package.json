@@ -1,22 +1,24 @@
 {
-  "name": "dsh-memory-cbdc",
-  "version": "0.1.2",
+  "name": "dsh-memory-gate",
+  "version": "0.2.0",
   "description": "Local long-term memory with CBDC authority gating for DeepSeek Harness",
-  "private": true,
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/GIT121995/dsh-memory-cbdc-plugin.git"
+    "url": "git+https://github.com/GIT121995/dsh-memory-gate.git"
   },
-  "homepage": "https://github.com/GIT121995/dsh-memory-cbdc-plugin#readme",
+  "homepage": "https://github.com/GIT121995/dsh-memory-gate#readme",
   "bugs": {
-    "url": "https://github.com/GIT121995/dsh-memory-cbdc-plugin/issues"
+    "url": "https://github.com/GIT121995/dsh-memory-gate/issues"
   },
   "keywords": [
     "deepseek",
     "deepseek-harness",
     "dsh",
     "memory",
+    "memory-gate",
+    "gate",
+    "cbdc",
     "sqlite"
   ],
   "type": "module",

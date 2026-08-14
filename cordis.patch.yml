@@ -1,6 +1,6 @@
 - insert:
-    - id: memory-cbdc
-      name: dsh-memory-cbdc
+    - id: memory-gate
+      name: dsh-memory-gate
       inject:
         - commands
       config:

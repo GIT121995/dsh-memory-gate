@@ -1,4 +1,7 @@
-# dsh-memory-cbdc
+# dsh-memory-gate（记忆闸门）
+
+> 前身是 `dsh-memory-cbdc`（v0.1.x）；v0.2.0 起更名为 **dsh-memory-gate**，
+> CBDC 保留为机制名（见下）。旧仓库地址仍会重定向到本仓库。
 
 DeepSeek Harness 的本地长期记忆插件。它把稳定信息保存为可撤销的
 Claim，并在每次模型调用前执行 CBDC（Claim → Belief → Decision →
@@ -9,7 +12,7 @@ Consumption）门控，避免“检索到”直接等于“注入模型”。
 Lightweight local long-term memory for DeepSeek Harness: SQLite-only,
 cross-session recall, bounded context injection, no extra model call.
 
-当前版本：`0.1.2`。目标 Harness：`0.1.0-rc.6`，Node.js `>=22.5`。
+当前版本：`0.2.0`。目标 Harness：`0.1.0-rc.6`，Node.js `>=22.5`。
 
 ## v1 能力
 
@@ -32,27 +35,34 @@ Linux / WSL：
 
 ```bash
 npm install -g pnpm
-dsh plugin --profile web add git+https://github.com/GIT121995/dsh-memory-cbdc-plugin.git#v0.1.2
-dsh web --dump-config | sed -n '/memory-cbdc/,+18p'
+dsh plugin --profile web add dsh-memory-gate
+dsh web --dump-config | sed -n '/memory-gate/,+18p'
 ```
 
 Windows PowerShell：
 
 ```powershell
 npm install -g pnpm
-dsh plugin --profile web add git+https://github.com/GIT121995/dsh-memory-cbdc-plugin.git#v0.1.2
+dsh plugin --profile web add dsh-memory-gate
 dsh web
 ```
 
+也可以用 Git 地址安装并锁定版本：
+
+```bash
+dsh plugin --profile web add git+https://github.com/GIT121995/dsh-memory-gate.git#v0.2.0
+```
+
 安装后重启正在运行的 `dsh web`。Bundle 默认写入
-`$DSH_HOME/memory/cbdc.sqlite`，并以保守 `assist` 模式启动。每次模型调用仍
-只有原来的一次；插件只在本地检索，并把最多 3 条相关记忆放入该次调用的上下文。
+`$DSH_HOME/memory/cbdc.sqlite`（文件名沿用 CBDC 机制名），并以保守 `assist`
+模式启动。每次模型调用仍只有原来的一次；插件只在本地检索，并把最多 3 条
+相关记忆放入该次调用的上下文。
 
 在 `$DSH_HOME/profiles/web/cordis.patch.yml` 中持久调整模式时，后置覆盖
 必须重述该插件拥有的完整配置：
 
 ```yaml
-- id: memory-cbdc
+- id: memory-gate
   config:
     databasePath: !!js dshHomePath('memory/cbdc.sqlite')
     mode: assist

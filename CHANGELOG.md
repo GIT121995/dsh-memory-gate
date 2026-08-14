@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.0 - 2026-08-14
+
+- Rename the plugin, package, and repository from `dsh-memory-cbdc` to
+  `dsh-memory-gate` (plugin id `memory-gate`). CBDC remains the name of the
+  Claim → Belief → Decision → Consumption gating mechanism.
+- Un-private the package so it can be published to npm; the npm spec
+  `dsh-memory-gate` becomes the primary install path, with the Git URL kept
+  as a pinned alternative. The old repository URL redirects to the new one.
+- The default database path stays `$DSH_HOME/memory/cbdc.sqlite`, so existing
+  v0.1.x installations keep their data after upgrading.
+
 ## 0.1.2 - 2026-08-14
 
 - Remove the unnecessary install-time `prepare` script so pnpm 10 can install

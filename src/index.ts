@@ -6,7 +6,7 @@ import { attachHarness } from './harness.js'
 import { MemoryRepository } from './repository.js'
 import { MemoryService } from './service.js'
 
-export const name = 'dsh-memory-cbdc'
+export const name = 'dsh-memory-gate'
 export const inject = ['commands']
 export { Config }
 
@@ -16,17 +16,17 @@ export function apply(ctx: Context, config: MemoryConfig): void {
   try {
     repository = new MemoryRepository(resolved.databasePath)
   } catch (cause) {
-    ctx.logger('memory-cbdc').error(
+    ctx.logger('memory-gate').error(
       'memory store unavailable; continuing without memory: %s',
       cause instanceof Error ? cause.message : String(cause),
     )
-    ctx.effect(() => registerUnavailableMemoryCommand(ctx.commands), 'memory-cbdc: unavailable command')
+    ctx.effect(() => registerUnavailableMemoryCommand(ctx.commands), 'memory-gate: unavailable command')
     return
   }
   try {
     repository.pruneAudit(resolved.auditRetentionRuns)
   } catch (cause) {
-    ctx.logger('memory-cbdc').warn(
+    ctx.logger('memory-gate').warn(
       'memory audit pruning omitted: %s',
       cause instanceof Error ? cause.message : String(cause),
     )
@@ -37,10 +37,10 @@ export function apply(ctx: Context, config: MemoryConfig): void {
       try {
         repository.close()
       } catch (cause) {
-        ctx.logger('memory-cbdc').warn('memory database close failed: %s', cause instanceof Error ? cause.message : String(cause))
+        ctx.logger('memory-gate').warn('memory database close failed: %s', cause instanceof Error ? cause.message : String(cause))
       }
     },
-    'memory-cbdc: database',
+    'memory-gate: database',
   )
   attachHarness(ctx, service)
 }

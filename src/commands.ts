@@ -35,8 +35,8 @@ export function registerUnavailableMemoryCommand(commands: CommandRuntime): () =
     handler: ({ rawInput }) => {
       const operation = rawInput.trim().toLocaleLowerCase()
       return operation === '' || operation === 'status'
-        ? success('Memory CBDC: unavailable. Agent execution continues without long-term memory; inspect the memory-cbdc startup log.')
-        : error('Memory CBDC is unavailable; no memory operation was performed.')
+        ? success('Memory Gate: unavailable. Agent execution continues without long-term memory; inspect the memory-gate startup log.')
+        : error('Memory Gate is unavailable; no memory operation was performed.')
     },
   })
 }
@@ -56,7 +56,7 @@ export function executeMemoryCommand(service: MemoryService, agent: Agent, rawIn
         const stats = service.repository.stats()
         return success(
           [
-            `Memory CBDC: healthy=${health.ok}, schema=${health.schemaVersion}, fts=${health.ftsAvailable}`,
+            `Memory Gate: healthy=${health.ok}, schema=${health.schemaVersion}, fts=${health.ftsAvailable}`,
             `Mode: ${service.mode} (runtime value; configure the profile to persist it)`,
             `Claims: ${stats.activeClaims} active, ${stats.tombstonedClaims} forgotten`,
             `Audit: ${stats.decisions} decisions, ${stats.injections} injections, ${stats.consumptions} feedback records`,

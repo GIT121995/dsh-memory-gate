@@ -14,10 +14,10 @@ interface OpenTurn {
 }
 
 export function attachHarness(ctx: Context, service: MemoryService): void {
-  const logger = ctx.logger('memory-cbdc')
+  const logger = ctx.logger('memory-gate')
   const openTurns = new Map<string, OpenTurn>()
 
-  ctx.effect(() => registerMemoryCommand(ctx.commands, service), 'memory-cbdc: command')
+  ctx.effect(() => registerMemoryCommand(ctx.commands, service), 'memory-gate: command')
   ctx.on('session/disposed', (session) => openTurns.delete(String(session.id)))
   ctx.on('session/event', (session, event) => {
     if (!service.config.automaticExtraction) return
@@ -93,7 +93,7 @@ export function injectRecall(
     if (!recall) return { kind: 'enter', messages }
     const memoryMessage = createUserMessage({
       content: [{ type: 'text', text: recall.text }],
-      source: { kind: 'plugin', plugin: 'dsh-memory-cbdc', form: 'recall' },
+      source: { kind: 'plugin', plugin: 'dsh-memory-gate', form: 'recall' },
     })
     service.repository.recordInjection(recall.runId, sessionId, service.mode, recall.claimIds, String(memoryMessage.id))
     return { kind: 'enter', messages: [...messages, memoryMessage] }

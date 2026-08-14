@@ -1,6 +1,6 @@
 import type { Context } from '@deepseek-ai/cordis';
 import { Config, type Config as MemoryConfig } from './config.js';
-export declare const name = "dsh-memory-cbdc";
+export declare const name = "dsh-memory-gate";
 export declare const inject: string[];
 export { Config };
 export declare function apply(ctx: Context, config: MemoryConfig): void;

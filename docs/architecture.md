@@ -1,4 +1,4 @@
-# dsh-memory-cbdc v1 详细设计
+# dsh-memory-gate v1 详细设计
 
 ## 1. 设计目标
 
@@ -113,7 +113,7 @@ Risk 基线按 Claim kind 区分，再叠加置信度不确定性和 harmful 历
 人类消息时运行。召回内容用 `createUserMessage` 生成：
 
 ```ts
-source: { kind: 'plugin', plugin: 'dsh-memory-cbdc', form: 'recall' }
+source: { kind: 'plugin', plugin: 'dsh-memory-gate', form: 'recall' }
 ```
 
 注入文本声明其是用户记忆而非系统指令，并转义尖括号。任何检索、策略、审计
