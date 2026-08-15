@@ -45,7 +45,9 @@
     "check": "npm run typecheck && npm run build",
     "test": "npm run build && node --test tests/text.test.mjs tests/repository.test.mjs backtest/measure.test.mjs",
     "backtest": "npm run build && node backtest/run.mjs",
-    "result": "npm run build && node backtest/result.mjs"
+    "result": "npm run build && node backtest/result.mjs",
+    "verify": "npm run check && npm test && npm run backtest",
+    "prepublishOnly": "npm run verify"
   },
   "engines": {
     "node": ">=22.5"

@@ -10,3 +10,5 @@ coverage/
 *.sqlite-shm
 *.sqlite-wal
 *.tgz
+reports/
+fixtures/captured/
