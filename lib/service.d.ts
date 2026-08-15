@@ -18,12 +18,27 @@ export declare class MemoryService {
     private modeValue;
     private retrievalsSincePrune;
     private injectionHistory;
+    private degraded;
+    private degradeReason;
+    private degradeReport;
     constructor(repository: MemoryRepository, config: Config);
     /** 滚动窗口（默认 20 回合）内已注入的记忆字符总数。 */
     private recentInjectionChars;
     private trackInjection;
     get mode(): MemoryMode;
     setMode(mode: MemoryMode): void;
+    /** L3 自我诊断状态：是否已自动降级、原因、以及关键指标。 */
+    get healthState(): {
+        degraded: boolean;
+        reason: string;
+        negativeRate?: number;
+        samples?: number;
+    };
+    /**
+     * 健康检查：最近反馈里负反馈（harmful/stale/conflict）占比过高 → 自动降级 shadow。
+     * 样本不足不下结论（避免小样本误杀）；用户 `/memory mode` 可手动恢复，恢复后重新评估。
+     */
+    checkHealth(): void;
     remember(content: string, options: RememberOptions): {
         claim: Claim;
         created: boolean;

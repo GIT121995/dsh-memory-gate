@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.7.0 - 2026-08-15
+
+- Self-diagnosis (milestone 3.0, P4): a rolling health vector over recent
+  feedback — when negative outcomes (harmful/stale/conflict) exceed
+  `healthNegativeRateThreshold` (default 0.4) with at least
+  `healthMinSamples` (default 5) samples, the gate auto-degrades to `shadow`
+  (zero injection) and surfaces a warning in `/memory status`. Manual
+  `/memory mode` override clears the degraded state.
+
 ## 0.6.0 - 2026-08-15
 
 - Cost axis (milestone 2.0, P2 + P3):

@@ -40,6 +40,11 @@ export declare class MemoryRepository {
     private reindexClaim;
     pruneAudit(maxRuns: number): number;
     stats(): MemoryStats;
+    /** 最近 N 条消费（反馈）记录，供 L3 健康向量使用。 */
+    recentConsumption(limit: number): Array<{
+        outcome: string;
+        createdAt: number;
+    }>;
     private count;
     private countRows;
     private searchFtsIds;

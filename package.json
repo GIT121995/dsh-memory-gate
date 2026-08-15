@@ -1,6 +1,6 @@
 {
   "name": "dsh-memory-gate",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Retrieved ≠ injected: CBDC-gated memory for DeepSeek Harness — decides how memory is USED (use/verify/ignore decisions, feedback learning, full audit); local SQLite + FTS5, bounded, no extra model call",
   "license": "MIT",
   "repository": {

@@ -106,11 +106,18 @@ dsh plugin --profile web remove dsh-memory-gate
     verifyMaxChars: 160
     sessionBudgetChars: 20000
     budgetWindowTurns: 20
+    healthNegativeRateThreshold: 0.4
+    healthMinSamples: 5
 ```
 
 成本分级：`use`（放心用）拿全宽，`verify`（待核验）单条最多 `verifyMaxChars`
 字符——敢用才配多花。滚动窗口（`budgetWindowTurns` 回合）内注入超
 `sessionBudgetChars` 即自动收紧（跳过 verify），成本可控、可审计。
+
+自我诊断：最近反馈里负反馈（harmful/stale/conflict）占比达到
+`healthNegativeRateThreshold`（且样本 ≥ `healthMinSamples`）时，自动降级为
+`shadow`（零注入）并在 `/memory status` 里红标警示；`/memory mode assist`
+可手动恢复。
 
 ## 使用
 

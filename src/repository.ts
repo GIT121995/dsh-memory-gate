@@ -399,6 +399,12 @@ export class MemoryRepository {
     }
   }
 
+  /** 最近 N 条消费（反馈）记录，供 L3 健康向量使用。 */
+  recentConsumption(limit: number): Array<{ outcome: string; createdAt: number }> {
+    const rows = this.db.prepare('SELECT outcome, created_at FROM consumption ORDER BY created_at DESC LIMIT ?').all(limit) as Row[]
+    return rows.map((row) => ({ outcome: String(row.outcome), createdAt: Number(row.created_at) }))
+  }
+
   private count(table: 'authority_decisions' | 'injections' | 'consumption'): number {
     return this.countRows(table)
   }

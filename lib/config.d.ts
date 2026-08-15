@@ -19,6 +19,10 @@ export interface Config {
     sessionBudgetChars?: number;
     /** P3：预算滚动窗口的回合数。 */
     budgetWindowTurns?: number;
+    /** P4：自我诊断——负反馈占比阈值，达到即自动降级 shadow。 */
+    healthNegativeRateThreshold?: number;
+    /** P4：自我诊断——下结论所需的最小反馈样本数（防小样本误杀）。 */
+    healthMinSamples?: number;
 }
 export declare const Config: Schema<Config>;
 export declare function validateConfig(config: Config): Config;

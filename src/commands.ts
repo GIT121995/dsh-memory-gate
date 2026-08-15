@@ -54,12 +54,18 @@ export function executeMemoryCommand(service: MemoryService, agent: Agent, rawIn
       case 'help':
         return success(USAGE)
       case 'status': {
+        service.checkHealth()
         const health = service.repository.health()
         const stats = service.repository.stats()
+        const self = service.healthState
+        const selfLine = self.degraded
+          ? `⚠️ 自我诊断：已自动降级为 shadow（零注入）——负反馈率 ${Math.round((self.negativeRate ?? 0) * 100)}%（${self.samples} 样本）。用 /memory mode assist 手动恢复。`
+          : '自我诊断：正常'
         return success(
           [
             `Memory Gate: healthy=${health.ok}, schema=${health.schemaVersion}, fts=${health.ftsAvailable}`,
             `Mode: ${service.mode} (runtime value; configure the profile to persist it)`,
+            selfLine,
             `Claims: ${stats.activeClaims} active, ${stats.tombstonedClaims} forgotten`,
             `Audit: ${stats.decisions} decisions, ${stats.injections} injections, ${stats.consumptions} feedback records`,
           ].join('\n'),

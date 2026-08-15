@@ -62,3 +62,56 @@ test('P3：未超预算时 verify 正常注入', () => {
     repo.close()
   }
 })
+
+test('P4：负反馈率超阈值 → 自动降级 shadow', () => {
+  const repo = new MemoryRepository(':memory:')
+  try {
+    const svc = new MemoryService(repo, CFG)
+    const ids = []
+    for (let i = 0; i < 5; i += 1) {
+      const { claim } = repo.remember({ scope: 'global', scopeKey: 'global', kind: 'fact', content: `记忆${i}`, origin: 'explicit' })
+      ids.push(claim.id)
+    }
+    for (let i = 0; i < 3; i += 1) svc.feedback(ids[i], 'harmful', 's1')
+    for (let i = 3; i < 5; i += 1) svc.feedback(ids[i], 'helped', 's1')
+    assert.equal(svc.mode, 'shadow', '应自动降级为 shadow')
+    assert.equal(svc.healthState.degraded, true)
+    assert.ok(svc.healthState.negativeRate >= 0.4)
+  } finally {
+    repo.close()
+  }
+})
+
+test('P4：样本不足不下结论（防小样本误杀）', () => {
+  const repo = new MemoryRepository(':memory:')
+  try {
+    const svc = new MemoryService(repo, CFG)
+    const { claim } = repo.remember({ scope: 'global', scopeKey: 'global', kind: 'fact', content: 'x', origin: 'explicit' })
+    svc.feedback(claim.id, 'harmful', 's1')
+    svc.feedback(claim.id, 'harmful', 's1')
+    assert.equal(svc.mode, 'assist', '样本不足不应降级')
+    assert.equal(svc.healthState.degraded, false)
+  } finally {
+    repo.close()
+  }
+})
+
+test('P4：手动 setMode 恢复清除降级', () => {
+  const repo = new MemoryRepository(':memory:')
+  try {
+    const svc = new MemoryService(repo, CFG)
+    const ids = []
+    for (let i = 0; i < 5; i += 1) {
+      const { claim } = repo.remember({ scope: 'global', scopeKey: 'global', kind: 'fact', content: `记忆${i}`, origin: 'explicit' })
+      ids.push(claim.id)
+    }
+    for (let i = 0; i < 4; i += 1) svc.feedback(ids[i], 'harmful', 's1')
+    svc.feedback(ids[4], 'helped', 's1')
+    assert.equal(svc.mode, 'shadow')
+    svc.setMode('assist')
+    assert.equal(svc.mode, 'assist')
+    assert.equal(svc.healthState.degraded, false)
+  } finally {
+    repo.close()
+  }
+})

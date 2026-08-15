@@ -31,6 +31,9 @@ export class MemoryService {
   private modeValue: MemoryMode
   private retrievalsSincePrune = 0
   private injectionHistory: number[] = []
+  private degraded = false
+  private degradeReason = ''
+  private degradeReport: { negativeRate: number; samples: number; triggeredAt: number } | null = null
 
   constructor(
     readonly repository: MemoryRepository,
@@ -56,6 +59,39 @@ export class MemoryService {
 
   setMode(mode: MemoryMode): void {
     this.modeValue = mode
+    this.degraded = false
+    this.degradeReason = ''
+    this.degradeReport = null
+  }
+
+  /** L3 自我诊断状态：是否已自动降级、原因、以及关键指标。 */
+  get healthState(): { degraded: boolean; reason: string; negativeRate?: number; samples?: number } {
+    return {
+      degraded: this.degraded,
+      reason: this.degradeReason,
+      ...(this.degradeReport ? { negativeRate: this.degradeReport.negativeRate, samples: this.degradeReport.samples } : {}),
+    }
+  }
+
+  /**
+   * 健康检查：最近反馈里负反馈（harmful/stale/conflict）占比过高 → 自动降级 shadow。
+   * 样本不足不下结论（避免小样本误杀）；用户 `/memory mode` 可手动恢复，恢复后重新评估。
+   */
+  checkHealth(): void {
+    if (this.degraded) return
+    const minSamples = this.config.healthMinSamples ?? 5
+    const threshold = this.config.healthNegativeRateThreshold ?? 0.4
+    const recent = this.repository.recentConsumption(50)
+    const outcomes = recent.map((item) => item.outcome)
+    if (outcomes.length < minSamples) return
+    const negative = outcomes.filter((o) => o === 'harmful' || o === 'stale' || o === 'conflict').length
+    const negativeRate = negative / outcomes.length
+    if (negativeRate >= threshold) {
+      this.degraded = true
+      this.degradeReason = `negative_feedback_rate=${negativeRate.toFixed(2)}`
+      this.degradeReport = { negativeRate, samples: outcomes.length, triggeredAt: Date.now() }
+      this.modeValue = 'shadow'
+    }
   }
 
   remember(content: string, options: RememberOptions): { claim: Claim; created: boolean } {
@@ -188,7 +224,9 @@ export class MemoryService {
   }
 
   feedback(claimId: string, outcome: ConsumptionOutcome, sessionId: string, detail?: string) {
-    return this.repository.recordConsumption(claimId, outcome, sessionId, detail)
+    const belief = this.repository.recordConsumption(claimId, outcome, sessionId, detail)
+    this.checkHealth()
+    return belief
   }
 
   latestInjection(sessionId: string) {
