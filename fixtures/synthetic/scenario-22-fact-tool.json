@@ -1,0 +1,11 @@
+{
+  "schema": "1.0",
+  "source": "synthetic",
+  "scenario_id": "fact-tool",
+  "query": "项目怎么构建",
+  "scopes": ["global"],
+  "claim_store": [
+    { "kind": "fact", "scope": "global", "content": "项目的构建命令是 pnpm build" }
+  ],
+  "golden": { "inject": [0], "expected_action": "use", "hard": false, "assistant_answer": "用 pnpm build 构建项目即可", "feedback": "helped" }
+}

@@ -1,0 +1,11 @@
+{
+  "schema": "1.0",
+  "source": "synthetic",
+  "scenario_id": "scope-isolation",
+  "query": "项目代码在哪个目录",
+  "scopes": ["global"],
+  "claim_store": [
+    { "kind": "fact", "scope": "workspace", "scope_key": "other-workspace", "content": "项目代码位于 /home/ubuntu/dsh 目录" }
+  ],
+  "golden": { "inject": [], "expected_action": "ignore", "hard": false }
+}

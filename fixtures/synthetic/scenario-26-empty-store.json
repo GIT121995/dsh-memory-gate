@@ -1,0 +1,9 @@
+{
+  "schema": "1.0",
+  "source": "synthetic",
+  "scenario_id": "empty-store",
+  "query": "随便问点什么",
+  "scopes": ["global"],
+  "claim_store": [],
+  "golden": { "inject": [], "expected_action": "ignore", "hard": false }
+}

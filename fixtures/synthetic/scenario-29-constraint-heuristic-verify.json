@@ -1,0 +1,11 @@
+{
+  "schema": "1.0",
+  "source": "synthetic",
+  "scenario_id": "constraint-heuristic-verify",
+  "query": "生成配置别暴露密钥",
+  "scopes": ["global"],
+  "claim_store": [
+    { "kind": "constraint", "scope": "global", "content": "不要暴露凭据", "origin": "heuristic" }
+  ],
+  "golden": { "inject": [0], "expected_action": "verify", "hard": false }
+}

@@ -1,0 +1,11 @@
+{
+  "schema": "1.0",
+  "source": "synthetic",
+  "scenario_id": "paraphrase-refine",
+  "query": "答复请精炼",
+  "scopes": ["global"],
+  "claim_store": [
+    { "kind": "preference", "scope": "global", "content": "用户偏好简洁中文回答" }
+  ],
+  "golden": { "inject": [0], "expected_action": "use", "hard": false }
+}

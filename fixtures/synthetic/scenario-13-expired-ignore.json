@@ -1,0 +1,11 @@
+{
+  "schema": "1.0",
+  "source": "synthetic",
+  "scenario_id": "expired-ignore",
+  "query": "请用简短中文回复",
+  "scopes": ["global"],
+  "claim_store": [
+    { "kind": "preference", "scope": "global", "content": "用户偏好简洁中文回答", "valid_until": 1 }
+  ],
+  "golden": { "inject": [], "expected_action": "ignore", "hard": false }
+}

@@ -1,11 +1,12 @@
 {
   "schema": "1.0",
   "source": "synthetic",
-  "scenario_id": "fact-project-path",
+  "scenario_id": "multi-claim-select",
   "query": "项目代码在哪个目录",
   "scopes": ["global"],
   "claim_store": [
-    { "kind": "fact", "scope": "global", "content": "项目代码位于 /home/ubuntu/dsh 目录" }
+    { "kind": "fact", "scope": "global", "content": "项目代码位于 /home/ubuntu/dsh 目录" },
+    { "kind": "fact", "scope": "global", "content": "上一次线上事故的原因是端口 8080 被占用" }
   ],
   "golden": { "inject": [0], "expected_action": "use", "hard": false, "assistant_answer": "项目代码在 /home/ubuntu/dsh 目录", "feedback": "helped" }
 }

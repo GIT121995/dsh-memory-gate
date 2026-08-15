@@ -1,0 +1,11 @@
+{
+  "schema": "1.0",
+  "source": "synthetic",
+  "scenario_id": "constraint-negative-zh",
+  "query": "回答请用中文",
+  "scopes": ["global"],
+  "claim_store": [
+    { "kind": "constraint", "scope": "global", "content": "不要在回答中使用英文术语" }
+  ],
+  "golden": { "inject": [0], "expected_action": "use", "hard": false }
+}

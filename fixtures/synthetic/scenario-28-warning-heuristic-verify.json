@@ -1,0 +1,11 @@
+{
+  "schema": "1.0",
+  "source": "synthetic",
+  "scenario_id": "warning-heuristic-verify",
+  "query": "在共享目录执行脚本",
+  "scopes": ["global"],
+  "claim_store": [
+    { "kind": "warning", "scope": "global", "content": "不要在共享目录运行高权限脚本", "origin": "heuristic" }
+  ],
+  "golden": { "inject": [0], "expected_action": "verify", "hard": false }
+}

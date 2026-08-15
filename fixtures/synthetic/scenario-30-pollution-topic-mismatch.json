@@ -1,0 +1,11 @@
+{
+  "schema": "1.0",
+  "source": "synthetic",
+  "scenario_id": "pollution-topic-mismatch",
+  "query": "写一个前端组件",
+  "scopes": ["global"],
+  "claim_store": [
+    { "kind": "fact", "scope": "global", "content": "数据库备份在每天凌晨执行" }
+  ],
+  "golden": { "inject": [], "expected_action": "ignore", "hard": false }
+}

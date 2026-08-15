@@ -1,0 +1,11 @@
+{
+  "schema": "1.0",
+  "source": "synthetic",
+  "scenario_id": "constraint-safety",
+  "query": "能在生产库执行删除吗",
+  "scopes": ["global"],
+  "claim_store": [
+    { "kind": "constraint", "scope": "global", "content": "不要在生产环境直接执行删除命令" }
+  ],
+  "golden": { "inject": [0], "expected_action": "use", "hard": false }
+}

@@ -1,0 +1,11 @@
+{
+  "schema": "1.0",
+  "source": "synthetic",
+  "scenario_id": "pollution-en-zh",
+  "query": "用 Rust 写快速排序",
+  "scopes": ["global"],
+  "claim_store": [
+    { "kind": "fact", "scope": "global", "content": "Remember to use tabs for indentation" }
+  ],
+  "golden": { "inject": [], "expected_action": "ignore", "hard": false }
+}

@@ -1,0 +1,11 @@
+{
+  "schema": "1.0",
+  "source": "synthetic",
+  "scenario_id": "procedure-multi-step",
+  "query": "发布前要做什么",
+  "scopes": ["global"],
+  "claim_store": [
+    { "kind": "procedure", "scope": "global", "content": "发布前需要过代码评审和测试" }
+  ],
+  "golden": { "inject": [0], "expected_action": "use", "hard": false }
+}

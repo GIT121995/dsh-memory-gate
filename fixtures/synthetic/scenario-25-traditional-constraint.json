@@ -1,0 +1,11 @@
+{
+  "schema": "1.0",
+  "source": "synthetic",
+  "scenario_id": "traditional-constraint",
+  "query": "请勿暴露凭证",
+  "scopes": ["global"],
+  "claim_store": [
+    { "kind": "constraint", "scope": "global", "content": "請不要暴露憑證" }
+  ],
+  "golden": { "inject": [0], "expected_action": "use", "hard": false }
+}
