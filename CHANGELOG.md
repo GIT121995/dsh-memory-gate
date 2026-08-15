@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.4.0 - 2026-08-15
+
+- Ship the evaluation data foundation (repo + npm tarball):
+  - Decision-layer backtest: 30 synthetic scenarios (all five claim kinds,
+    verify branches, quarantine, pollution, cross-scope, paraphrases) with a
+    four-leg comparison (gate / top-3 / random / shadow) and a clear-vs-hard
+    split; a hard case records the known partial-overlap over-trigger.
+  - Result-layer measurement: adoption / token-cost / effect scoring.
+  - Trajectory observer: parse DSH session logs (jsonl/zstd) and measure
+    per-turn injection adoption and effect.
+  - Release gate: `prepublishOnly` runs `check + test + backtest` before any
+    publish and aborts on clear-case regressions.
+- No runtime behavior change to the plugin itself.
+
 ## 0.3.2 - 2026-08-14
 
 - Docs-only release: reposition from storage ("SQLite + FTS5 memory") to

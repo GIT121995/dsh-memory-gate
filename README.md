@@ -141,9 +141,16 @@ dsh plugin --profile web remove dsh-memory-gate
 
 ```bash
 npm install
-npm run check
+npm run check          # 类型检查 + 构建
+npm test               # 21 个单元/集成测试
+npm run backtest       # 决策层回测：30 场景四腿对照（gate/top-3/random/shadow）
+npm run result         # 结果层：注入采纳度 / 成本 / 效果分
+npm run observe <log>  # 轨迹观测：对真实 session 日志量采纳度
 npm pack --dry-run
 ```
+
+发布门：`prepublishOnly` 会在任何 `npm publish` 前自动跑 `check + test +
+backtest`，回测清晰场景不过关即中止发布。
 
 发布前的三轮基准中位数（Node.js 22.22.1，1001 条合成记忆，每轮 300
 次查询）：WSL 磁盘上的触发检索 p95 `5.343ms`，包含 CBDC 决策和 SQLite
