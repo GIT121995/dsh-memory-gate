@@ -103,7 +103,14 @@ dsh plugin --profile web remove dsh-memory-gate
     maxUseRisk: 0.45
     harmfulQuarantineThreshold: 2
     freshnessHalfLifeDays: 180
+    verifyMaxChars: 160
+    sessionBudgetChars: 20000
+    budgetWindowTurns: 20
 ```
+
+成本分级：`use`（放心用）拿全宽，`verify`（待核验）单条最多 `verifyMaxChars`
+字符——敢用才配多花。滚动窗口（`budgetWindowTurns` 回合）内注入超
+`sessionBudgetChars` 即自动收紧（跳过 verify），成本可控、可审计。
 
 ## 使用
 

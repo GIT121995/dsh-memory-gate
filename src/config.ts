@@ -15,6 +15,12 @@ export interface Config {
   maxUseRisk: number
   harmfulQuarantineThreshold: number
   freshnessHalfLifeDays: number
+  /** P2：verify（待核验）记忆的单条注入字符上限；use 不受此限。 */
+  verifyMaxChars?: number
+  /** P3：滚动窗口内记忆注入的字符预算，超预算即收紧（跳过 verify）。 */
+  sessionBudgetChars?: number
+  /** P3：预算滚动窗口的回合数。 */
+  budgetWindowTurns?: number
 }
 
 export const Config: Schema<Config> = Schema.object({
@@ -36,6 +42,9 @@ export const Config: Schema<Config> = Schema.object({
   maxUseRisk: Schema.number().min(0).max(1).default(0.45),
   harmfulQuarantineThreshold: Schema.number().min(1).max(20).step(1).default(2),
   freshnessHalfLifeDays: Schema.number().min(1).max(3650).default(180),
+  verifyMaxChars: Schema.number().min(64).max(2000).step(1).default(160),
+  sessionBudgetChars: Schema.number().min(0).max(1_000_000).step(1).default(20_000),
+  budgetWindowTurns: Schema.number().min(1).max(200).step(1).default(20),
 })
 
 export function validateConfig(config: Config): Config {

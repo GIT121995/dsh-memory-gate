@@ -13,6 +13,12 @@ export interface Config {
     maxUseRisk: number;
     harmfulQuarantineThreshold: number;
     freshnessHalfLifeDays: number;
+    /** P2：verify（待核验）记忆的单条注入字符上限；use 不受此限。 */
+    verifyMaxChars?: number;
+    /** P3：滚动窗口内记忆注入的字符预算，超预算即收紧（跳过 verify）。 */
+    sessionBudgetChars?: number;
+    /** P3：预算滚动窗口的回合数。 */
+    budgetWindowTurns?: number;
 }
 export declare const Config: Schema<Config>;
 export declare function validateConfig(config: Config): Config;

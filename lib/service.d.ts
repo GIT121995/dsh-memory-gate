@@ -17,7 +17,11 @@ export declare class MemoryService {
     readonly config: Config;
     private modeValue;
     private retrievalsSincePrune;
+    private injectionHistory;
     constructor(repository: MemoryRepository, config: Config);
+    /** 滚动窗口（默认 20 回合）内已注入的记忆字符总数。 */
+    private recentInjectionChars;
+    private trackInjection;
     get mode(): MemoryMode;
     setMode(mode: MemoryMode): void;
     remember(content: string, options: RememberOptions): {

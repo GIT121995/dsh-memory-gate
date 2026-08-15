@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.6.0 - 2026-08-15
+
+- Cost axis (milestone 2.0, P2 + P3):
+  - P2 tiered injection: `verify` claims are capped at `verifyMaxChars`
+    (default 160) while `use` claims keep the full budget — only confidently
+    used memory gets the full spend.
+  - P3 deterministic budget governor: a rolling window (`budgetWindowTurns`,
+    default 20) tracks injected memory characters; when the window exceeds
+    `sessionBudgetChars` (default 20000) the governor tightens by skipping
+    `verify` injections for that turn.
+
 ## 0.5.0 - 2026-08-15
 
 - Authority: weak lexical matches demote from `use` to `verify` (relevance
