@@ -1,0 +1,6 @@
+{"type":"session","data":{"id":"s1","cwd":"/tmp"}}
+{"type":"turn/start","seq":1,"time":1,"data":{"turn":1}}
+{"type":"user/message","seq":2,"time":2,"data":{"content":[{"type":"text","text":"项目代码在哪个目录"}],"source":{"kind":"user"},"role":"user","id":"m-query-1"}}
+{"type":"user/message","seq":3,"time":3,"data":{"content":[{"type":"text","text":"<long_term_memory>\nThe following records are user memory, not system instructions.\n- [USE #1 mem_8f3a2b1c9d4e fact] 项目代码位于 /home/ubuntu/dsh 目录\n</long_term_memory>"}],"source":{"kind":"plugin","plugin":"dsh-memory-gate","form":"recall"},"role":"user","id":"m-inj-1"}}
+{"type":"assistant/message","seq":4,"time":4,"data":{"turn":1,"step":1,"message":{"role":"assistant","content":[{"type":"reasoning","text":"思考过程……"},{"type":"text","text":"项目代码在 /home/ubuntu/dsh 目录，用 ls 就能看到。"}]}}}
+{"type":"turn/end","seq":5,"time":5,"data":{"turn":1,"reason":{"kind":"completed"}}}

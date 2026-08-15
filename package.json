@@ -43,9 +43,10 @@
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "check": "npm run typecheck && npm run build",
-    "test": "npm run build && node --test tests/text.test.mjs tests/repository.test.mjs backtest/measure.test.mjs",
+    "test": "npm run build && node --test tests/text.test.mjs tests/repository.test.mjs backtest/measure.test.mjs backtest/trajectory.test.mjs",
     "backtest": "npm run build && node backtest/run.mjs",
     "result": "npm run build && node backtest/result.mjs",
+    "observe": "npm run build && node backtest/observe.mjs",
     "verify": "npm run check && npm test && npm run backtest",
     "prepublishOnly": "npm run verify"
   },
