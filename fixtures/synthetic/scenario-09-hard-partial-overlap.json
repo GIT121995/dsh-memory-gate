@@ -1,0 +1,11 @@
+{
+  "schema": "1.0",
+  "source": "synthetic",
+  "scenario_id": "hard-partial-overlap",
+  "query": "如何排查端口占用问题",
+  "scopes": ["global"],
+  "claim_store": [
+    { "kind": "fact", "scope": "global", "content": "上一次线上事故的原因是端口 8080 被占用" }
+  ],
+  "golden": { "inject": [], "expected_action": "ignore", "hard": true }
+}

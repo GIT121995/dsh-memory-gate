@@ -1,0 +1,11 @@
+{
+  "schema": "1.0",
+  "source": "synthetic",
+  "scenario_id": "constraint-no-creds",
+  "query": "生成配置文件时，别把 token 写进去",
+  "scopes": ["global"],
+  "claim_store": [
+    { "kind": "constraint", "scope": "global", "content": "不要在回复中暴露凭据或密钥" }
+  ],
+  "golden": { "inject": [0], "expected_action": "use", "hard": false }
+}

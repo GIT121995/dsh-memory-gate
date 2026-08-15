@@ -1,0 +1,11 @@
+{
+  "schema": "1.0",
+  "source": "synthetic",
+  "scenario_id": "heuristic-verify",
+  "query": "请用简短中文回复",
+  "scopes": ["global"],
+  "claim_store": [
+    { "kind": "preference", "scope": "global", "content": "我偏好简洁的中文回答", "origin": "heuristic" }
+  ],
+  "golden": { "inject": [0], "expected_action": "verify", "hard": false }
+}

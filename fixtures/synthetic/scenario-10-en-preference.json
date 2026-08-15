@@ -1,0 +1,11 @@
+{
+  "schema": "1.0",
+  "source": "synthetic",
+  "scenario_id": "en-preference",
+  "query": "answer me in english",
+  "scopes": ["global"],
+  "claim_store": [
+    { "kind": "preference", "scope": "global", "content": "Respond in English only" }
+  ],
+  "golden": { "inject": [0], "expected_action": "use", "hard": false }
+}

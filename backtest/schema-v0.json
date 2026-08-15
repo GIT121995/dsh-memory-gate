@@ -1,0 +1,34 @@
+{
+  "$comment": "dsh-memory-gate 回测样本 schema v0 —— 一条样本 = 一次「召回→决策→注入→结果」的闭环。决策层回测只填到 injection；outcome 由结果层回测（P1）再填。",
+  "schema": "1.0",
+  "source": "synthetic | captured",
+  "scenario_id": "pref-zh-concise",
+  "query": "请用简短的中文答复我",
+  "scopes": ["global"],
+  "claim_store": [
+    { "kind": "preference", "scope": "global", "content": "用户偏好简洁中文回答", "harmful_bootstrap": 0, "valid_until": null }
+  ],
+  "recall": {
+    "candidate_indices": [0],
+    "lexical_scores": [0.82]
+  },
+  "decisions": [
+    { "claim_index": 0, "action": "use", "belief": 0.86, "relevance": 0.82, "risk": 0.16, "reasons": ["authority_thresholds_passed"] }
+  ],
+  "injection": {
+    "claim_indices": [0],
+    "token_cost": 420,
+    "char_budget": 300
+  },
+  "outcome": {
+    "adoption": null,
+    "quality": null,
+    "feedback": null,
+    "effect_score": null
+  },
+  "golden": {
+    "inject": [0],
+    "expected_action": "use",
+    "hard": false
+  }
+}

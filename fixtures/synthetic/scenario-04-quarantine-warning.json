@@ -1,0 +1,11 @@
+{
+  "schema": "1.0",
+  "source": "synthetic",
+  "scenario_id": "quarantine-warning",
+  "query": "数据库迁移怎么做",
+  "scopes": ["global"],
+  "claim_store": [
+    { "kind": "warning", "scope": "global", "content": "生产环境的数据库迁移需要停机窗口", "harmful_bootstrap": 2 }
+  ],
+  "golden": { "inject": [], "expected_action": "ignore", "hard": false }
+}

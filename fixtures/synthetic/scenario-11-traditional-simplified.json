@@ -1,0 +1,11 @@
+{
+  "schema": "1.0",
+  "source": "synthetic",
+  "scenario_id": "traditional-simplified",
+  "query": "请用简洁中文答复",
+  "scopes": ["global"],
+  "claim_store": [
+    { "kind": "preference", "scope": "global", "content": "我偏好簡潔的中文回答" }
+  ],
+  "golden": { "inject": [0], "expected_action": "use", "hard": false }
+}

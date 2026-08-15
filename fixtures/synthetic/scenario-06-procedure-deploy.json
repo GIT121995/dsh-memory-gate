@@ -1,0 +1,11 @@
+{
+  "schema": "1.0",
+  "source": "synthetic",
+  "scenario_id": "procedure-deploy",
+  "query": "部署上线怎么做",
+  "scopes": ["global"],
+  "claim_store": [
+    { "kind": "procedure", "scope": "global", "content": "部署流程是先测试再上线，采用蓝绿切换" }
+  ],
+  "golden": { "inject": [0], "expected_action": "use", "hard": false }
+}

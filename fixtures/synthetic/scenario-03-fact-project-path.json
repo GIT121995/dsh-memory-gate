@@ -1,0 +1,11 @@
+{
+  "schema": "1.0",
+  "source": "synthetic",
+  "scenario_id": "fact-project-path",
+  "query": "项目代码在哪个目录",
+  "scopes": ["global"],
+  "claim_store": [
+    { "kind": "fact", "scope": "global", "content": "项目代码位于 /home/ubuntu/dsh 目录" }
+  ],
+  "golden": { "inject": [0], "expected_action": "use", "hard": false }
+}
