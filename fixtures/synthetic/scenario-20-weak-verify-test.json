@@ -1,11 +1,11 @@
 {
   "schema": "1.0",
   "source": "synthetic",
-  "scenario_id": "hard-overlap-test",
+  "scenario_id": "weak-verify-test",
   "query": "写单元测试",
   "scopes": ["global"],
   "claim_store": [
     { "kind": "fact", "scope": "global", "content": "测试环境的数据可以随意重置" }
   ],
-  "golden": { "inject": [], "expected_action": "ignore", "hard": true }
+  "golden": { "inject": [0], "expected_action": "verify", "hard": false }
 }

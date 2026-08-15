@@ -1,11 +1,11 @@
 {
   "schema": "1.0",
   "source": "synthetic",
-  "scenario_id": "hard-overlap-deploy",
+  "scenario_id": "weak-verify-deploy",
   "query": "部署文档怎么写",
   "scopes": ["global"],
   "claim_store": [
     { "kind": "procedure", "scope": "global", "content": "部署流程是先测试再上线，采用蓝绿切换" }
   ],
-  "golden": { "inject": [], "expected_action": "ignore", "hard": true }
+  "golden": { "inject": [0], "expected_action": "verify", "hard": false }
 }

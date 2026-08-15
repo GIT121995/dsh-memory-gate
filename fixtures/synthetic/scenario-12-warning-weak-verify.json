@@ -1,0 +1,12 @@
+{
+  "schema": "1.0",
+  "source": "synthetic",
+  "scenario_id": "warning-weak-verify",
+  "query": "能直接在生产库改表吗",
+  "scopes": ["global"],
+  "claim_store": [
+    { "kind": "warning", "scope": "global", "content": "生产环境禁止直接修改数据库 schema" }
+  ],
+  "golden": { "inject": [0], "expected_action": "verify", "hard": false },
+  "note": "语义高度相关但词法弱（改表 vs 修改 schema 不在同义词组），弱匹配降级为 verify；待补同义覆盖后可回升为 use。"
+}

@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.5.0 - 2026-08-15
+
+- Authority: weak lexical matches demote from `use` to `verify` (relevance
+  0.12–0.5, non-capsule). The gate no longer confidently injects a memory
+  that only weakly overlaps the query — it labels it as an unverified hint.
+- Fix capsule composition: a trusted global preference/constraint that also
+  matches lexically now keeps its capsule identity (unconditional use) instead
+  of being downgraded to a weak trigger match.
+- Backtest: the three partial-overlap hard cases now resolve as `verify`
+  (weak matches); one synonym-coverage gap (改表 vs 修改 schema) is recorded
+  for follow-up. 30/30 clear scenarios pass, F1 = 1.000.
+
 ## 0.4.0 - 2026-08-15
 
 - Ship the evaluation data foundation (repo + npm tarball):

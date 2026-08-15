@@ -97,10 +97,9 @@ export class MemoryService {
     )
     const capsule = this.repository.capsule(scopeKeys, this.config.capsuleLimit)
     const candidates = new Map(triggered.map((candidate) => [candidate.claim.id, candidate]))
-    for (const candidate of capsule) {
-      const existing = candidates.get(candidate.claim.id)
-      if (!existing) candidates.set(candidate.claim.id, candidate)
-    }
+    // capsule 覆盖 trigger：可信的全局偏好/约束即使同时命中词法检索，
+    // 也须保留其「胶囊」身份（无条件 use），不能被弱词法匹配降级。
+    for (const candidate of capsule) candidates.set(candidate.claim.id, candidate)
     const ranked = [...candidates.values()]
       .map((candidate) => rankCandidate(candidate, this.config.freshnessHalfLifeDays))
       .sort((a, b) => b.rankScore - a.rankScore)
