@@ -13,6 +13,7 @@ const USAGE = [
   '/memory explain <claim-id>',
   '/memory forget <claim-id>',
   '/memory ok [#n]',
+  '/memory mine [1-500]',
   '/memory feedback',
   '/memory feedback <#n> <helped|harmful|stale|conflict|unknown> [detail]',
   '/memory mode <shadow|assist|enforce>',
@@ -90,6 +91,16 @@ export function executeMemoryCommand(service: MemoryService, agent: Agent, rawIn
         if (!mode || !['shadow', 'assist', 'enforce'].includes(mode)) return error('Usage: /memory mode <shadow|assist|enforce>')
         service.setMode(mode)
         return success(`Memory mode is now ${mode}. This runtime override resets when Harness restarts.`)
+      }
+      case 'mine': {
+        const limit = tokens[0] === undefined ? 50 : Number(tokens[0])
+        if (!Number.isInteger(limit) || limit < 1 || limit > 500) return error('Usage: /memory mine [1-500]')
+        const { added, scanned } = service.mine(limit)
+        return success(
+          added > 0
+            ? `Mined ${added} new memory claim(s) from ${scanned} session log(s) — labeled heuristic/mined, use /memory list to review.`
+            : `No new memory found across ${scanned} session log(s).`,
+        )
       }
       case 'remember': {
         const parsed = parseRemember(tokens)

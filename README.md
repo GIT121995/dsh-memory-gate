@@ -132,6 +132,7 @@ dsh plugin --profile web remove dsh-memory-gate
 /memory feedback 1 helped        # 按编号反馈
 /memory ok                       # 最近注入的记忆全部记为 helped（常用）
 /memory ok 2                     # 只反馈其中第 2 条
+/memory mine 50                  # 从历史 session 日志回挖漏掉的「记住…」
 /memory forget mem_<uuid>
 /memory mode assist
 ```
@@ -139,6 +140,10 @@ dsh plugin --profile web remove dsh-memory-gate
 `/memory list` 显示当前 session/workspace/global 作用域内最近的活跃记忆。
 `/memory mode` 只修改当前进程；重启后回到 Profile 配置。`forget` 是可审计
 的 tombstone，不会物理删除历史记录。
+
+日志回挖（`/memory mine`）：扫描历史 session 日志，补提取实时提取器漏掉的
+记忆 cue（如句中的「记住…」），以 heuristic 低置信 + `mined` 标签存入全局
+作用域——宁缺毋滥，挖出来的也要过 CBDC 裁决、可由你反馈校准。
 
 反馈（`feedback` / `ok`）是记忆学习的入口：`helped` 会把当次查询的区分性
 词项学进该条记忆的触发词，让以后的换说法也能命中；`harmful`/`stale` 会

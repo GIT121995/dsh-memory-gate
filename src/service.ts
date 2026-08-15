@@ -11,8 +11,10 @@ import type {
 } from './contracts.js'
 import { decideAuthority } from './authority.js'
 import { extractDurableClaims } from './extractor.js'
+import { mineSessions } from './mine.js'
 import { inspectForSecrets } from './redaction.js'
 import { MemoryRepository } from './repository.js'
+import { dirname, resolve } from 'node:path'
 
 export interface RecallContext {
   query: string
@@ -231,6 +233,28 @@ export class MemoryService {
 
   latestInjection(sessionId: string) {
     return this.repository.latestInjection(sessionId)
+  }
+
+  /**
+   * P5 日志回挖：扫描 sessions 根目录下的历史日志，补提取实时提取器漏掉的
+   * 记忆 cue（「记住 X」等），以 heuristic 低置信 + `mined` 标签存入全局作用域。
+   * 返回新增条数与扫描到的日志文件数。全程 fail-open。
+   */
+  mine(maxSessions = 50): { added: number; scanned: number } {
+    const sessionsRoot = resolve(dirname(dirname(this.config.databasePath)), 'sessions')
+    const { claims, scannedFiles } = mineSessions(sessionsRoot, maxSessions)
+    let added = 0
+    for (const claim of claims) {
+      const result = this.remember(claim.content, {
+        scope: 'global',
+        scopeKey: 'global',
+        kind: claim.kind,
+        tags: claim.tags,
+        origin: 'heuristic',
+      })
+      if (result.created) added += 1
+    }
+    return { added, scanned: scannedFiles }
   }
 }
 

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.8.0 - 2026-08-15
+
+- Log mining (milestone 3.0, P5): `/memory mine [1-500]` scans historical
+  session logs (zstd, via `node:zlib`) and re-extracts memory cues the live
+  extractor missed (e.g. mid-sentence "记住…"). Mined claims land as
+  heuristic low-confidence claims tagged `mined` in global scope, and still
+  pass the CBDC gate. Fail-open throughout: unreadable logs are skipped.
+
 ## 0.7.0 - 2026-08-15
 
 - Self-diagnosis (milestone 3.0, P4): a rolling health vector over recent

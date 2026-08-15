@@ -1,6 +1,6 @@
 {
   "name": "dsh-memory-gate",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "Retrieved ≠ injected: CBDC-gated memory for DeepSeek Harness — decides how memory is USED (use/verify/ignore decisions, feedback learning, full audit); local SQLite + FTS5, bounded, no extra model call",
   "license": "MIT",
   "repository": {
@@ -45,7 +45,7 @@
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "check": "npm run typecheck && npm run build",
-    "test": "npm run build && node --test tests/text.test.mjs tests/repository.test.mjs tests/service.test.mjs backtest/measure.test.mjs backtest/trajectory.test.mjs",
+    "test": "npm run build && node --test tests/text.test.mjs tests/repository.test.mjs tests/service.test.mjs tests/mine.test.mjs backtest/measure.test.mjs backtest/trajectory.test.mjs",
     "backtest": "npm run build && node backtest/run.mjs",
     "result": "npm run build && node backtest/result.mjs",
     "observe": "npm run build && node backtest/observe.mjs",
