@@ -9,12 +9,12 @@ const TEST_CONFIG = {
   minUseBelief: 0.7, maxUseRisk: 0.45, harmfulQuarantineThreshold: 2, freshnessHalfLifeDays: 180,
 }
 
-test('fresh database migrates to schema v2 with FTS terms column', () => {
+test('fresh database migrates to schema v3 with FTS terms column', () => {
   const repository = new MemoryRepository(':memory:')
   try {
     const health = repository.health()
     assert.equal(health.ok, true)
-    assert.equal(health.schemaVersion, 2)
+    assert.equal(health.schemaVersion, 3)
     assert.equal(health.ftsAvailable, true)
   } finally {
     repository.close()
@@ -185,7 +185,7 @@ test('v1 database upgrades in place with backfilled terms', async () => {
   try {
     const health = repository.health()
     assert.equal(health.ok, true)
-    assert.equal(health.schemaVersion, 2)
+    assert.equal(health.schemaVersion, 3)
     const legacy = repository.getClaim('mem_legacy')
     assert.ok(legacy)
     assert.ok(legacy.terms.includes('偏好'), `expected backfilled terms, got: ${legacy.terms.join(',')}`)
@@ -193,6 +193,37 @@ test('v1 database upgrades in place with backfilled terms', async () => {
     const results = repository.search('偏好简洁中文', ['s1'], 5)
     assert.ok(results.length > 0)
     assert.equal(results[0].claim.id, 'mem_legacy')
+  } finally {
+    repository.close()
+  }
+})
+
+test('相似去重：60% 重叠 → 旧 claim superseded、新 claim 记 supersedes', () => {
+  const repository = new MemoryRepository(':memory:')
+  try {
+    const a = repository.remember({ scope: 'session', scopeKey: 's1', kind: 'fact', content: '项目代码位于 /home/ubuntu/dsh 目录', origin: 'explicit' }).claim
+    const b = repository.remember({ scope: 'session', scopeKey: 's1', kind: 'fact', content: '项目代码位于 /home/ubuntu/dsh 文件夹', origin: 'explicit' }).claim
+    assert.equal(b.supersedes, a.id, '新 claim 应引用被取代的旧 claim')
+    assert.equal(repository.getClaim(a.id).state, 'superseded')
+    assert.equal(repository.getClaim(b.id).state, 'active')
+    // 检索只返回新 claim
+    const results = repository.search('项目目录', ['s1'], 5)
+    assert.ok(results.every((c) => c.claim.id !== a.id))
+  } finally {
+    repository.close()
+  }
+})
+
+test('consolidate 在已去重库上是幂等空操作', () => {
+  const repository = new MemoryRepository(':memory:')
+  try {
+    const a = repository.remember({ scope: 'session', scopeKey: 's1', kind: 'fact', content: '项目代码位于 /home/ubuntu/dsh 目录', origin: 'explicit' }).claim
+    const b = repository.remember({ scope: 'session', scopeKey: 's1', kind: 'fact', content: '项目代码位于 /home/ubuntu/dsh 文件夹', origin: 'explicit' }).claim
+    // 写入时 b 已把 a supersede 掉，consolidate 应无事可做、不报错
+    const merged = repository.consolidate()
+    assert.equal(merged, 0)
+    assert.equal(repository.getClaim(a.id).state, 'superseded')
+    assert.equal(repository.getClaim(b.id).state, 'active')
   } finally {
     repository.close()
   }

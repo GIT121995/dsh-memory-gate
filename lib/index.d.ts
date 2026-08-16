@@ -12,6 +12,6 @@ export { inspectForSecrets, redactForLog } from './redaction.js';
 export { MemoryRepository } from './repository.js';
 export { sessionScopeKey, workspaceScopeKey } from './scope.js';
 export { MemoryService } from './service.js';
-export { extractTerms, mergeLearnedTerms, normalizeForTerms, SYNONYM_GROUPS } from './text.js';
+export { extractTerms, mergeLearnedTerms, normalizeForTerms, SYNONYM_GROUPS, termOverlap } from './text.js';
 export { mineClaims, mineSessionLog, mineSessions } from './mine.js';
 //# sourceMappingURL=index.d.ts.map

@@ -188,3 +188,16 @@ export function buildFtsQuery(value: string): string {
     .map((term) => `"${term.replaceAll('"', '""')}"`)
     .join(' OR ')
 }
+
+/**
+ * 两个词项集合的重叠率：交叠词数 / 较小集合大小（0~1）。
+ * 用于「相近表达视为同一条记忆」的相似去重（supersede）。
+ */
+export function termOverlap(aTerms: string[], bTerms: string[]): number {
+  if (!aTerms.length || !bTerms.length) return 0
+  const a = new Set(aTerms)
+  const b = new Set(bTerms)
+  let intersection = 0
+  for (const term of a) if (b.has(term)) intersection += 1
+  return intersection / Math.min(a.size, b.size)
+}

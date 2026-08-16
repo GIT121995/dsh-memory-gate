@@ -60,6 +60,8 @@ export declare class MemoryService {
         claimIds: string[];
         createdAt: number;
     } | undefined;
+    /** 定期 consolidation：合并近重复的活跃记忆（旧 → superseded）。 */
+    consolidate(): number;
     /**
      * P5 日志回挖：扫描 sessions 根目录下的历史日志，补提取实时提取器漏掉的
      * 记忆 cue（「记住 X」等），以 heuristic 低置信 + `mined` 标签存入全局作用域。

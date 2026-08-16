@@ -45,11 +45,20 @@ export declare class MemoryRepository {
         outcome: string;
         createdAt: number;
     }>;
+    /**
+     * 定期 consolidation：扫描活跃 claim，把同一作用域内重叠度 ≥ 阈值的
+     * 近重复项合并（较旧的标记为 superseded、指向较新的）。返回被合并的条数。
+     */
+    consolidate(): number;
     private count;
     private countRows;
     private searchFtsIds;
     private indexClaim;
     private migrate;
+    /** Schema v3：相似去重的 supersedes 引用列。 */
+    private upgradeToV3;
+    /** 在相同作用域内找一条与新内容足够相似的活跃 claim（供 supersede 用）。 */
+    private findSupersedeTarget;
     /**
      * Schema v2: write-time trigger terms, learned feedback terms, and query
      * term capture. Existing rows are backfilled from content + tags, and the

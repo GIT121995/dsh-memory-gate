@@ -42,4 +42,9 @@ export declare function mergeLearnedTerms(existing: string[], incoming: string[]
 };
 /** Build an FTS5 OR query from quoted terms (bigrams become phrase queries). */
 export declare function buildFtsQuery(value: string): string;
+/**
+ * 两个词项集合的重叠率：交叠词数 / 较小集合大小（0~1）。
+ * 用于「相近表达视为同一条记忆」的相似去重（supersede）。
+ */
+export declare function termOverlap(aTerms: string[], bTerms: string[]): number;
 //# sourceMappingURL=text.d.ts.map

@@ -31,20 +31,20 @@ test('P3：超预算后跳过 verify、只注入 use', () => {
   const repo = new MemoryRepository(':memory:')
   try {
     const svc = new MemoryService(repo, { ...CFG, sessionBudgetChars: 60, budgetWindowTurns: 20 })
-    // use（显式 fact）+ verify（启发式 fact），同 query 都命中
+    // use（显式 fact）+ verify（启发式 fact），内容足够不同以免被 supersede 合并，但都命中「项目」
     repo.remember({ scope: 'global', scopeKey: 'global', kind: 'fact', content: '项目代码在 A 目录', origin: 'explicit' })
-    repo.remember({ scope: 'global', scopeKey: 'global', kind: 'fact', content: '项目代码在 B 目录', origin: 'heuristic' })
+    repo.remember({ scope: 'global', scopeKey: 'global', kind: 'fact', content: '项目部署采用蓝绿切换', origin: 'heuristic' })
 
-    const first = svc.prepareRecall({ query: '项目代码在哪个目录', sessionId: 's1', sessionScopeKey: 's1' })
+    const first = svc.prepareRecall({ query: '项目相关', sessionId: 's1', sessionScopeKey: 's1' })
     assert.ok(first, '首次应注入')
     assert.ok(first.text.includes('A 目录'), 'use 应注入')
-    assert.ok(first.text.includes('B 目录'), '首次未超预算，verify 也应注入')
+    assert.ok(first.text.includes('蓝绿切换'), '首次未超预算，verify 也应注入')
 
     // 首次注入已把滚动窗口字符数推到预算之上
-    const second = svc.prepareRecall({ query: '项目代码在哪个目录', sessionId: 's1', sessionScopeKey: 's1' })
+    const second = svc.prepareRecall({ query: '项目相关', sessionId: 's1', sessionScopeKey: 's1' })
     assert.ok(second, '第二次应仍有 use 注入')
     assert.ok(second.text.includes('A 目录'), 'use 仍注入')
-    assert.ok(!second.text.includes('B 目录'), '超预算后 verify 应被跳过')
+    assert.ok(!second.text.includes('蓝绿切换'), '超预算后 verify 应被跳过')
   } finally {
     repo.close()
   }
@@ -54,10 +54,10 @@ test('P3：未超预算时 verify 正常注入', () => {
   const repo = new MemoryRepository(':memory:')
   try {
     const svc = new MemoryService(repo, { ...CFG, sessionBudgetChars: 100_000 })
-    repo.remember({ scope: 'global', scopeKey: 'global', kind: 'fact', content: '项目代码在 B 目录', origin: 'heuristic' })
-    const recall = svc.prepareRecall({ query: '项目代码在哪个目录', sessionId: 's1', sessionScopeKey: 's1' })
+    repo.remember({ scope: 'global', scopeKey: 'global', kind: 'fact', content: '项目部署采用蓝绿切换', origin: 'heuristic' })
+    const recall = svc.prepareRecall({ query: '项目相关', sessionId: 's1', sessionScopeKey: 's1' })
     assert.ok(recall)
-    assert.ok(recall.text.includes('B 目录'))
+    assert.ok(recall.text.includes('蓝绿切换'))
   } finally {
     repo.close()
   }
@@ -67,9 +67,10 @@ test('P4：负反馈率超阈值 → 自动降级 shadow', () => {
   const repo = new MemoryRepository(':memory:')
   try {
     const svc = new MemoryService(repo, CFG)
+    const contents = ['偏好蓝色主题', '生产环境禁止直接改库', '项目代码在 A 目录', '部署用蓝绿切换', '回答请用中文']
     const ids = []
-    for (let i = 0; i < 5; i += 1) {
-      const { claim } = repo.remember({ scope: 'global', scopeKey: 'global', kind: 'fact', content: `记忆${i}`, origin: 'explicit' })
+    for (const content of contents) {
+      const { claim } = repo.remember({ scope: 'global', scopeKey: 'global', kind: 'preference', content, origin: 'explicit' })
       ids.push(claim.id)
     }
     for (let i = 0; i < 3; i += 1) svc.feedback(ids[i], 'harmful', 's1')
@@ -100,9 +101,10 @@ test('P4：手动 setMode 恢复清除降级', () => {
   const repo = new MemoryRepository(':memory:')
   try {
     const svc = new MemoryService(repo, CFG)
+    const contents = ['偏好蓝色主题', '生产环境禁止直接改库', '项目代码在 A 目录', '部署用蓝绿切换', '回答请用中文']
     const ids = []
-    for (let i = 0; i < 5; i += 1) {
-      const { claim } = repo.remember({ scope: 'global', scopeKey: 'global', kind: 'fact', content: `记忆${i}`, origin: 'explicit' })
+    for (const content of contents) {
+      const { claim } = repo.remember({ scope: 'global', scopeKey: 'global', kind: 'preference', content, origin: 'explicit' })
       ids.push(claim.id)
     }
     for (let i = 0; i < 4; i += 1) svc.feedback(ids[i], 'harmful', 's1')

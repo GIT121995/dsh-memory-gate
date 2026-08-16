@@ -20,6 +20,8 @@ export interface Claim {
     terms: string[];
     /** Terms learned from confirmed-helpful queries (feedback loop). */
     learnedTerms: string[];
+    /** 被本 claim 取代的旧 claim id（相似去重时填充）。 */
+    supersedes?: string;
     sourceSessionId?: string;
     sourceEventSeq?: number;
     validFrom: number;

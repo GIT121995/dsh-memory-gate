@@ -133,6 +133,7 @@ dsh plugin --profile web remove dsh-memory-gate
 /memory ok                       # 最近注入的记忆全部记为 helped（常用）
 /memory ok 2                     # 只反馈其中第 2 条
 /memory mine 50                  # 从历史 session 日志回挖漏掉的「记住…」
+/memory consolidate              # 合并近重复记忆（旧 → superseded）
 /memory forget mem_<uuid>
 /memory mode assist
 ```
@@ -144,6 +145,10 @@ dsh plugin --profile web remove dsh-memory-gate
 日志回挖（`/memory mine`）：扫描历史 session 日志，补提取实时提取器漏掉的
 记忆 cue（如句中的「记住…」），以 heuristic 低置信 + `mined` 标签存入全局
 作用域——宁缺毋滥，挖出来的也要过 CBDC 裁决、可由你反馈校准。
+
+相似去重（supersede）：写入时若与同作用域已有记忆词项重叠 ≥ 60%，旧的自动
+标记为 `superseded`、新记忆记录取代关系——相近表达不再堆成近重复条目。
+`/memory consolidate` 可手动触发一次全库合并。
 
 反馈（`feedback` / `ok`）是记忆学习的入口：`helped` 会把当次查询的区分性
 词项学进该条记忆的触发词，让以后的换说法也能命中；`harmful`/`stale` 会

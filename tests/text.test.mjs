@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { extractTerms, mergeLearnedTerms, normalizeForTerms, SYNONYM_GROUPS } from '../lib/index.js'
+import { extractTerms, mergeLearnedTerms, normalizeForTerms, SYNONYM_GROUPS, termOverlap } from '../lib/index.js'
 
 test('normalizeForTerms folds full-width and common traditional forms', () => {
   assert.equal(normalizeForTerms('ＡＢＣ１２３'), 'abc123')
@@ -46,4 +46,13 @@ test('alias tokens are stable across group order changes', () => {
   const expected = SYNONYM_GROUPS.map((group) => `recall_alias_${group.id}`).sort()
   const actual = [...expected].sort()
   assert.deepEqual(actual, expected)
+})
+
+test('termOverlap 度量词项重叠率', () => {
+  assert.equal(termOverlap([], []), 0)
+  assert.equal(termOverlap(['简洁', '中文'], ['简洁', '中文']), 1)
+  // 交叠 2 / min(3,3) = 0.67
+  const ratio = termOverlap(['简洁', '中文', '回答'], ['简洁', '中文', '答复'])
+  assert.ok(ratio > 0.6 && ratio < 0.7, `期望 ~0.67，实际 ${ratio}`)
+  assert.equal(termOverlap(['a'], ['b']), 0)
 })

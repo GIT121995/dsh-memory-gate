@@ -14,6 +14,7 @@ const USAGE = [
   '/memory forget <claim-id>',
   '/memory ok [#n]',
   '/memory mine [1-500]',
+  '/memory consolidate',
   '/memory feedback',
   '/memory feedback <#n> <helped|harmful|stale|conflict|unknown> [detail]',
   '/memory mode <shadow|assist|enforce>',
@@ -101,6 +102,10 @@ export function executeMemoryCommand(service: MemoryService, agent: Agent, rawIn
             ? `Mined ${added} new memory claim(s) from ${scanned} session log(s) — labeled heuristic/mined, use /memory list to review.`
             : `No new memory found across ${scanned} session log(s).`,
         )
+      }
+      case 'consolidate': {
+        const merged = service.consolidate()
+        return success(merged > 0 ? `Merged ${merged} near-duplicate memory claim(s) (old → superseded).` : 'No near-duplicates to merge.')
       }
       case 'remember': {
         const parsed = parseRemember(tokens)

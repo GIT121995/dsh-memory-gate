@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.9.0 - 2026-08-16
+
+- Similarity dedup (supersede): on write, a claim whose terms overlap an
+  existing active claim in the same scope by ≥ 60% supersedes it (the old one
+  is marked `superseded` and the new one records the link). Adopts the
+  "update instead of append" rule from community discussion #1345.
+- `/memory consolidate` retroactively merges near-duplicate active claims.
+- Schema v3 adds `claims.supersedes`.
+
 ## 0.8.0 - 2026-08-15
 
 - Log mining (milestone 3.0, P5): `/memory mine [1-500]` scans historical

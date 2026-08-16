@@ -13,12 +13,14 @@ import type {
   NewClaim,
   SearchCandidate,
 } from './contracts.js'
-import { buildFtsQuery, extractTerms, mergeLearnedTerms } from './text.js'
+import { buildFtsQuery, extractTerms, mergeLearnedTerms, termOverlap } from './text.js'
 
 type SqlValue = string | number | bigint | null | Uint8Array
 type Row = Record<string, SqlValue>
 
-const SCHEMA_VERSION = 2
+const SCHEMA_VERSION = 3
+/** 相似去重阈值（James Ross 的「60% 重叠 → 更新而非新建」）。 */
+const SUPERSEDE_OVERLAP_THRESHOLD = 0.6
 const CLAIM_TERM_LIMIT = 80
 const QUERY_TERM_LIMIT = 24
 const LEARNED_TERM_LIMIT = 40
@@ -65,6 +67,9 @@ export class MemoryRepository {
       .get(input.scopeKey, contentHash) as Row | undefined
     if (existing) return { claim: rowToClaim(existing), created: false }
 
+    const terms = extractTerms(`${content} ${uniqueTags(input.tags ?? []).join(' ')}`, CLAIM_TERM_LIMIT)
+    const supersedesId = this.findSupersedeTarget(input.scopeKey, terms)
+
     const now = Date.now()
     const claim: Claim = {
       id: `mem_${randomUUID()}`,
@@ -77,8 +82,9 @@ export class MemoryRepository {
       origin: input.origin,
       sensitivity: input.sensitivity ?? 'normal',
       contentHash,
-      terms: extractTerms(`${content} ${uniqueTags(input.tags ?? []).join(' ')}`, CLAIM_TERM_LIMIT),
+      terms,
       learnedTerms: [],
+      ...(supersedesId === undefined ? {} : { supersedes: supersedesId }),
       ...(input.sourceSessionId === undefined ? {} : { sourceSessionId: input.sourceSessionId }),
       ...(input.sourceEventSeq === undefined ? {} : { sourceEventSeq: input.sourceEventSeq }),
       validFrom: input.validFrom ?? now,
@@ -88,13 +94,17 @@ export class MemoryRepository {
     }
 
     this.transaction(() => {
+      if (supersedesId !== undefined) {
+        this.db.prepare("UPDATE claims SET state = 'superseded', updated_at = ? WHERE id = ? AND state = 'active'").run(now, supersedesId)
+        if (this.ftsAvailable) this.db.prepare('DELETE FROM claim_fts WHERE claim_id = ?').run(supersedesId)
+      }
       this.db
         .prepare(
           `INSERT INTO claims (
              id, scope, scope_key, kind, content, tags_json, state, origin,
              sensitivity, content_hash, source_session_id, source_event_seq,
-             valid_from, valid_until, created_at, updated_at, terms_json, learned_terms_json
-           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+             valid_from, valid_until, created_at, updated_at, terms_json, learned_terms_json, supersedes
+           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         )
         .run(
           claim.id,
@@ -115,6 +125,7 @@ export class MemoryRepository {
           claim.updatedAt,
           JSON.stringify(claim.terms),
           JSON.stringify(claim.learnedTerms),
+          supersedesId ?? null,
         )
       const alpha = claim.origin === 'explicit' ? 6 : 4
       const beta = claim.origin === 'explicit' ? 1 : 2
@@ -405,6 +416,42 @@ export class MemoryRepository {
     return rows.map((row) => ({ outcome: String(row.outcome), createdAt: Number(row.created_at) }))
   }
 
+  /**
+   * 定期 consolidation：扫描活跃 claim，把同一作用域内重叠度 ≥ 阈值的
+   * 近重复项合并（较旧的标记为 superseded、指向较新的）。返回被合并的条数。
+   */
+  consolidate(): number {
+    const rows = this.db
+      .prepare("SELECT id, scope_key, terms_json, updated_at FROM claims WHERE state = 'active' ORDER BY scope_key, updated_at DESC")
+      .all() as Row[]
+    const byScope = new Map<string, Row[]>()
+    for (const row of rows) {
+      const key = String(row.scope_key)
+      const group = byScope.get(key) ?? []
+      group.push(row)
+      byScope.set(key, group)
+    }
+    let merged = 0
+    this.transaction(() => {
+      for (const group of byScope.values()) {
+        for (let i = 0; i < group.length; i += 1) {
+          const newer = group[i]!
+          for (let j = i + 1; j < group.length; j += 1) {
+            const older = group[j]!
+            const overlap = termOverlap(parseJsonArray(newer.terms_json), parseJsonArray(older.terms_json))
+            if (overlap < SUPERSEDE_OVERLAP_THRESHOLD) continue
+            this.db
+              .prepare("UPDATE claims SET state = 'superseded', supersedes = ?, updated_at = ? WHERE id = ? AND state = 'active'")
+              .run(String(newer.id), Date.now(), String(older.id))
+            if (this.ftsAvailable) this.db.prepare('DELETE FROM claim_fts WHERE claim_id = ?').run(String(older.id))
+            merged += 1
+          }
+        }
+      }
+    })
+    return merged
+  }
+
   private count(table: 'authority_decisions' | 'injections' | 'consumption'): number {
     return this.countRows(table)
   }
@@ -527,7 +574,32 @@ export class MemoryRepository {
       })
     }
     if (version < 2) this.upgradeToV2()
+    if (version < 3) this.upgradeToV3()
     this.ensureFts()
+  }
+
+  /** Schema v3：相似去重的 supersedes 引用列。 */
+  private upgradeToV3(): void {
+    this.transaction(() => {
+      this.db.exec("ALTER TABLE claims ADD COLUMN supersedes TEXT;")
+      this.db.exec('PRAGMA user_version = 3')
+    })
+  }
+
+  /** 在相同作用域内找一条与新内容足够相似的活跃 claim（供 supersede 用）。 */
+  private findSupersedeTarget(scopeKey: string, terms: string[]): string | undefined {
+    if (!terms.length) return undefined
+    const rows = this.db
+      .prepare("SELECT id, terms_json FROM claims WHERE scope_key = ? AND state = 'active' ORDER BY updated_at DESC LIMIT 200")
+      .all(scopeKey) as Row[]
+    let best: { id: string; overlap: number } | undefined
+    for (const row of rows) {
+      const overlap = termOverlap(terms, parseJsonArray(row.terms_json))
+      if (overlap >= SUPERSEDE_OVERLAP_THRESHOLD && (best === undefined || overlap > best.overlap)) {
+        best = { id: String(row.id), overlap }
+      }
+    }
+    return best?.id
   }
 
   /**
@@ -641,6 +713,7 @@ function rowToClaim(row: Row): Claim {
     contentHash: String(row.content_hash),
     terms: parseJsonArray(row.terms_json),
     learnedTerms: parseJsonArray(row.learned_terms_json),
+    ...(row.supersedes === null || row.supersedes === undefined ? {} : { supersedes: String(row.supersedes) }),
     ...(row.source_session_id === null || row.source_session_id === undefined ? {} : { sourceSessionId: String(row.source_session_id) }),
     ...(row.source_event_seq === null || row.source_event_seq === undefined ? {} : { sourceEventSeq: Number(row.source_event_seq) }),
     validFrom: Number(row.valid_from),
