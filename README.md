@@ -24,7 +24,7 @@ over time — all auditable, bounded (≤3 claims / 1200 chars by default),
 no extra model call. (Local SQLite + FTS5 storage; no embeddings, no
 external memory API.)
 
-当前版本：`0.3.2`。目标 Harness：`0.1.0-rc.6`，Node.js `>=22.5`。
+当前版本：`0.9.0`。目标 Harness：`0.1.0-rc.6`，Node.js `>=22.5`。
 
 ## v1 能力
 
@@ -35,6 +35,9 @@ external memory API.)
 - **使用后学习**：`/memory ok`（或 `feedback <#n> helped`）把当次查询的
   区分性词项学进触发词（只存词项、不存查询原文），harmful/stale 降低
   置信度并触发隔离——越用越准，`/memory explain` 全程可审计。
+- **近重复合并**：写入时新记忆与同作用域已有词项重叠 ≥ 60% 时，旧条目
+  自动标 `superseded`、新记忆记录取代关系；`/memory consolidate` 可手动
+  全库合并，避免"相近表达"堆成重复记忆。
 - **三种运行模式**：`shadow`（只审计零注入）、`assist`（默认，注入 use +
   标出 verify）、`enforce`（只注入高置信）——按场景切换"怎么用"。
 - 双通道召回：少量可信全局偏好/约束组成记忆胶囊，其余记忆经词项触发。
@@ -69,7 +72,7 @@ dsh web
 也可以用 Git 地址安装并锁定版本：
 
 ```bash
-dsh plugin --profile web add git+https://github.com/GIT121995/dsh-memory-gate.git#v0.3.2
+dsh plugin --profile web add git+https://github.com/GIT121995/dsh-memory-gate.git#v0.9.0
 ```
 
 卸载：
