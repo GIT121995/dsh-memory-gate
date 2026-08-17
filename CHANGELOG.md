@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.10.0 - 2026-08-16
+
+- Relax the live auto-extractor: memory cues ("记住…", "我偏好…", "always",
+  …) now match mid-sentence, not just at the start. The claim is taken from
+  the cue to the sentence end, so leading context is dropped. Still the same
+  conservative cue phrases and heuristic low-confidence origin.
+
 ## 0.9.0 - 2026-08-16
 
 - Similarity dedup (supersede): on write, a claim whose terms overlap an
