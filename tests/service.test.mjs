@@ -117,3 +117,19 @@ test('P4：手动 setMode 恢复清除降级', () => {
     repo.close()
   }
 })
+
+test('bugfix：单条长 use 记忆也能注入（不被静默丢弃）', () => {
+  const repo = new MemoryRepository(':memory:')
+  try {
+    const svc = new MemoryService(repo, CFG)
+    const longContent = '项目构建命令是 pnpm build，' + '详细步骤说明'.repeat(300)
+    assert.ok(longContent.length > 1200, `前置：内容应超预算，实际 ${longContent.length}`)
+    repo.remember({ scope: 'global', scopeKey: 'global', kind: 'fact', content: longContent, origin: 'explicit' })
+    const recall = svc.prepareRecall({ query: '项目构建命令', sessionId: 's1', sessionScopeKey: 's1' })
+    assert.ok(recall, '长 use 记忆应被注入而非静默丢弃')
+    assert.equal(recall.claimIds.length, 1)
+    assert.ok(recall.text.length <= CFG.maxInjectionChars + 1, `注入总长不应超预算，实际 ${recall.text.length}`)
+  } finally {
+    repo.close()
+  }
+})

@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.11.1 - 2026-08-18
+
+- Bugfix release (independent code review):
+  - A single long `use` claim could be silently dropped: the per-claim cap
+    didn't reserve header/prefix/closing overhead, so a claim near the budget
+    pushed the total over `maxInjectionChars` and `break` left nothing
+    injected. Now the content cap is computed from the remaining budget.
+  - `consolidate()` wrote `supersedes` on the superseded (older) claim,
+    opposite to `remember()` (which records it on the newer claim). Unified to
+    "the newer claim records the id of the one it supersedes".
+  - `mine` / `mineWorkspaceOnce` aborted the whole batch when one mined claim
+    was secret-like (the per-claim `remember` throw wasn't caught). Now each
+    claim is try-caught, preserving fail-open.
+  - Retrieval candidates were truncated to the newest `scanLimit` rows, so an
+    old but FTS-matching claim was unreachable once active claims exceeded the
+    window. FTS-only hits are now unioned into the candidate set.
+  - README version numbers were stale (0.9.0 → 0.11.0).
+
 ## 0.11.0 - 2026-08-16
 
 - Workspace mining (Plan B): on a session's first step, the plugin mines the

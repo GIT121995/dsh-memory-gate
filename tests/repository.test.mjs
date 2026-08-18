@@ -228,3 +228,17 @@ test('consolidate 在已去重库上是幂等空操作', () => {
     repository.close()
   }
 })
+
+test('bugfix：FTS 命中的旧记忆（超 scanLimit）也能召回', () => {
+  const repository = new MemoryRepository(':memory:')
+  try {
+    const relevant = repository.remember({ scope: 'session', scopeKey: 's1', kind: 'fact', content: '用户偏好中文回答', origin: 'explicit' }).claim
+    for (let i = 0; i < 100; i += 1) {
+      repository.remember({ scope: 'session', scopeKey: 's1', kind: 'fact', content: `filler_${i}`, origin: 'explicit' })
+    }
+    const results = repository.search('中文回答', ['s1'], 5)
+    assert.ok(results.some((c) => c.claim.id === relevant.id), '旧但相关的记忆应被 FTS 召回')
+  } finally {
+    repository.close()
+  }
+})
