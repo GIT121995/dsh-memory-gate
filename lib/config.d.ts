@@ -23,6 +23,10 @@ export interface Config {
     healthNegativeRateThreshold?: number;
     /** P4：自我诊断——下结论所需的最小反馈样本数（防小样本误杀）。 */
     healthMinSamples?: number;
+    /** 方案 B：会话首轮自动回挖当前 workspace 的历史 session（默认开）。 */
+    autoMineWorkspace?: boolean;
+    /** 方案 B：自动回挖时最多扫描的 session 文件数。 */
+    mineMaxSessions?: number;
 }
 export declare const Config: Schema<Config>;
 export declare function validateConfig(config: Config): Config;

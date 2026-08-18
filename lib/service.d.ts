@@ -21,6 +21,7 @@ export declare class MemoryService {
     private degraded;
     private degradeReason;
     private degradeReport;
+    private minedSessions;
     constructor(repository: MemoryRepository, config: Config);
     /** 滚动窗口（默认 20 回合）内已注入的记忆字符总数。 */
     private recentInjectionChars;
@@ -68,6 +69,14 @@ export declare class MemoryService {
      * 返回新增条数与扫描到的日志文件数。全程 fail-open。
      */
     mine(maxSessions?: number): {
+        added: number;
+        scanned: number;
+    };
+    /**
+     * 方案 B：会话首轮自动回挖「当前 workspace」的历史 session（只挖声明过的 cue），
+     * 挖出的记忆进 workspace 作用域（不污染别的项目）。每个会话只跑一次。
+     */
+    mineWorkspaceOnce(sessionId: string, cwd?: string): {
         added: number;
         scanned: number;
     };

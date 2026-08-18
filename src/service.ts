@@ -11,9 +11,10 @@ import type {
 } from './contracts.js'
 import { decideAuthority } from './authority.js'
 import { extractDurableClaims } from './extractor.js'
-import { mineSessions } from './mine.js'
+import { mineSessions, mineWorkspaceSessions } from './mine.js'
 import { inspectForSecrets } from './redaction.js'
 import { MemoryRepository } from './repository.js'
+import { workspaceScopeKey } from './scope.js'
 import { dirname, resolve } from 'node:path'
 
 export interface RecallContext {
@@ -36,6 +37,7 @@ export class MemoryService {
   private degraded = false
   private degradeReason = ''
   private degradeReport: { negativeRate: number; samples: number; triggeredAt: number } | null = null
+  private minedSessions = new Set<string>()
 
   constructor(
     readonly repository: MemoryRepository,
@@ -253,6 +255,33 @@ export class MemoryService {
       const result = this.remember(claim.content, {
         scope: 'global',
         scopeKey: 'global',
+        kind: claim.kind,
+        tags: claim.tags,
+        origin: 'heuristic',
+      })
+      if (result.created) added += 1
+    }
+    return { added, scanned: scannedFiles }
+  }
+
+  /**
+   * 方案 B：会话首轮自动回挖「当前 workspace」的历史 session（只挖声明过的 cue），
+   * 挖出的记忆进 workspace 作用域（不污染别的项目）。每个会话只跑一次。
+   */
+  mineWorkspaceOnce(sessionId: string, cwd?: string): { added: number; scanned: number } {
+    if (this.minedSessions.has(sessionId)) return { added: 0, scanned: 0 }
+    this.minedSessions.add(sessionId)
+    if (this.config.autoMineWorkspace === false) return { added: 0, scanned: 0 }
+    const key = workspaceScopeKey(cwd)
+    if (!key) return { added: 0, scanned: 0 }
+    const maxSessions = this.config.mineMaxSessions ?? 20
+    const sessionsRoot = resolve(dirname(dirname(this.config.databasePath)), 'sessions')
+    const { claims, scannedFiles } = mineWorkspaceSessions(sessionsRoot, key, maxSessions)
+    let added = 0
+    for (const claim of claims) {
+      const result = this.remember(claim.content, {
+        scope: 'workspace',
+        scopeKey: key,
         kind: claim.kind,
         tags: claim.tags,
         origin: 'heuristic',

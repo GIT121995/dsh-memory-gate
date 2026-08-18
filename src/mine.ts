@@ -8,6 +8,8 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { zstdDecompressSync } from 'node:zlib'
 
+import { workspaceScopeKey } from './scope.js'
+
 import type { ClaimKind } from './contracts.js'
 import { normalizeContent } from './repository.js'
 
@@ -116,6 +118,59 @@ export function mineSessions(sessionsRoot: string, maxSessions: number): MineSca
         scannedFiles += 1
         try {
           const plaintext = zstdDecompressSync(readFileSync(file)).toString('utf8')
+          claims.push(...mineSessionLog(plaintext))
+        } catch {
+          // fail-open：损坏或无法读取的日志直接跳过
+        }
+        if (scannedFiles >= maxSessions) return { claims, scannedFiles }
+      }
+    }
+  } catch {
+    // sessionsRoot 不存在等情况，返回空结果
+  }
+  return { claims, scannedFiles }
+}
+
+/** 从 session 日志纯文本里读出首个 `session` 事件的 cwd 对应的 workspace 键。 */
+export function sessionWorkspaceKey(plaintext: string): string | undefined {
+  for (const line of plaintext.split('\n')) {
+    if (!line.trim()) continue
+    let event: { type?: string; cwd?: string } | null = null
+    try {
+      event = JSON.parse(line) as { type?: string; cwd?: string }
+    } catch {
+      continue
+    }
+    if (!event || event.type !== 'session') continue
+    return workspaceScopeKey(event.cwd)
+  }
+  return undefined
+}
+
+/**
+ * 扫描 sessionsRoot，只回挖「属于指定 workspace」的 session 日志。
+ * 通过每个日志首个 session 事件的 cwd 哈希匹配 workspaceKey（方案 B：不串味）。
+ */
+export function mineWorkspaceSessions(sessionsRoot: string, workspaceKey: string, maxSessions: number): MineScanResult {
+  const claims: MinedClaim[] = []
+  let scannedFiles = 0
+  try {
+    const workspaceDirs = readdirSync(sessionsRoot)
+    for (const workspaceDir of workspaceDirs) {
+      const workspacePath = join(sessionsRoot, workspaceDir)
+      let sessionDirs: string[] = []
+      try {
+        sessionDirs = readdirSync(workspacePath)
+      } catch {
+        continue
+      }
+      for (const sessionDir of sessionDirs) {
+        const file = join(workspacePath, sessionDir, 'session.jsonl.zstd')
+        if (!existsSync(file)) continue
+        scannedFiles += 1
+        try {
+          const plaintext = zstdDecompressSync(readFileSync(file)).toString('utf8')
+          if (sessionWorkspaceKey(plaintext) !== workspaceKey) continue
           claims.push(...mineSessionLog(plaintext))
         } catch {
           // fail-open：损坏或无法读取的日志直接跳过

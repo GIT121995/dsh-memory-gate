@@ -111,7 +111,13 @@ dsh plugin --profile web remove dsh-memory-gate
     budgetWindowTurns: 20
     healthNegativeRateThreshold: 0.4
     healthMinSamples: 5
+    autoMineWorkspace: true
+    mineMaxSessions: 20
 ```
+
+会话回挖（方案 B）：会话首轮自动扫描**同一工作区**的历史 session 日志，补提取
+其中声明过的记忆 cue，挖进 workspace 作用域——不串到别的项目。每会话只跑一次，
+`autoMineWorkspace: false` 可关，`mineMaxSessions` 限制扫描文件数。
 
 成本分级：`use`（放心用）拿全宽，`verify`（待核验）单条最多 `verifyMaxChars`
 字符——敢用才配多花。滚动窗口（`budgetWindowTurns` 回合）内注入超

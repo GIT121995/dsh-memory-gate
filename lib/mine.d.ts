@@ -17,4 +17,11 @@ export interface MineScanResult {
  * 全程 fail-open：任何读/解压失败都跳过，绝不抛错。
  */
 export declare function mineSessions(sessionsRoot: string, maxSessions: number): MineScanResult;
+/** 从 session 日志纯文本里读出首个 `session` 事件的 cwd 对应的 workspace 键。 */
+export declare function sessionWorkspaceKey(plaintext: string): string | undefined;
+/**
+ * 扫描 sessionsRoot，只回挖「属于指定 workspace」的 session 日志。
+ * 通过每个日志首个 session 事件的 cwd 哈希匹配 workspaceKey（方案 B：不串味）。
+ */
+export declare function mineWorkspaceSessions(sessionsRoot: string, workspaceKey: string, maxSessions: number): MineScanResult;
 //# sourceMappingURL=mine.d.ts.map

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.11.0 - 2026-08-16
+
+- Workspace mining (Plan B): on a session's first step, the plugin mines the
+  historical session logs belonging to the same workspace (matched by each
+  log's `cwd`) and re-extracts declared memory cues into workspace-scoped
+  claims. Runs once per session, bounded (`mineMaxSessions`, default 20),
+  fail-open, and opt-out via `autoMineWorkspace: false`. Other projects'
+  logs are never mined.
+
 ## 0.10.0 - 2026-08-16
 
 - Relax the live auto-extractor: memory cues ("记住…", "我偏好…", "always",

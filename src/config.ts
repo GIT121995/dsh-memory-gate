@@ -25,6 +25,10 @@ export interface Config {
   healthNegativeRateThreshold?: number
   /** P4：自我诊断——下结论所需的最小反馈样本数（防小样本误杀）。 */
   healthMinSamples?: number
+  /** 方案 B：会话首轮自动回挖当前 workspace 的历史 session（默认开）。 */
+  autoMineWorkspace?: boolean
+  /** 方案 B：自动回挖时最多扫描的 session 文件数。 */
+  mineMaxSessions?: number
 }
 
 export const Config: Schema<Config> = Schema.object({
@@ -51,6 +55,8 @@ export const Config: Schema<Config> = Schema.object({
   budgetWindowTurns: Schema.number().min(1).max(200).step(1).default(20),
   healthNegativeRateThreshold: Schema.number().min(0).max(1).default(0.4),
   healthMinSamples: Schema.number().min(1).max(1000).step(1).default(5),
+  autoMineWorkspace: Schema.boolean().default(true),
+  mineMaxSessions: Schema.number().min(1).max(200).step(1).default(20),
 })
 
 export function validateConfig(config: Config): Config {

@@ -30,6 +30,12 @@ export function attachHarness(ctx: Context, service: MemoryService): void {
     async (payload, next): Promise<PreStepDecision> => {
       const decision = await next()
       if (decision.kind !== 'enter' || payload.signal.aborted || payload.step !== 1) return decision
+      // 方案 B：会话首轮回挖当前 workspace 的历史声明（每会话一次、fail-open）
+      try {
+        service.mineWorkspaceOnce(String(payload.agent.session.id), payload.agent.session.header.cwd)
+      } catch (cause) {
+        logger.warn('workspace mining omitted: %s', cause instanceof Error ? cause.message : String(cause))
+      }
       return injectRecall(service, payload.agent, decision.messages, logger)
     },
     { prepend: true },
