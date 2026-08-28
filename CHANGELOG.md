@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.11.2 - 2026-08-28
+
+- Compatibility release for upstream `dsh` v0.1.2-alpha.1:
+  - Widen `peerDependencies` for `@deepseek-ai/dsh-agent`, `@deepseek-ai/dsh-commands`,
+    `@deepseek-ai/dsh-llm`, and `@deepseek-ai/dsh-session` to accept `0.1.0-rc.6`,
+    `0.1.1-rc.x`, and `0.1.2-alpha.x`.
+  - Sync README target Harness and Git-install version pin to `0.11.2`.
+  - No runtime behavior change; existing `use`/`verify`/`ignore` decisions and
+    backtest scenarios remain unchanged.
+
 ## 0.11.1 - 2026-08-18
 
 - Bugfix release (independent code review):
