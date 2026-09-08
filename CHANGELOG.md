@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.11.3 - 2026-09-08
+
+- Compatibility/listing release for DSH STORE (AI-Scarlett/DSH-Store#636):
+  - Add `dsh.compatibility.dshReleases` exact compatibility records for the
+    current official latest-three DSH window (`0.1.2-rc.1`, `0.1.3-alpha.1`,
+    `0.1.3-alpha.2`) so the fixed-Commit catalog can restore the listing.
+  - Widen `peerDependencies` for `@deepseek-ai/dsh-agent`, `@deepseek-ai/dsh-commands`,
+    `@deepseek-ai/dsh-llm`, and `@deepseek-ai/dsh-session` to also accept
+    `0.1.3-alpha.x`; add the matching `dsh.compatibility.dsh` range.
+  - Sync README target Harness and Git-install version pin to `0.11.3`.
+  - No runtime behavior change; existing `use`/`verify`/`ignore` decisions and
+    backtest scenarios remain unchanged.
+
 ## 0.11.2 - 2026-08-28
 
 - Compatibility release for upstream `dsh` v0.1.2-alpha.1:
