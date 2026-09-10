@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.11.4 - 2026-09-10
+
+- Compatibility/listing release for the official latest-three DSH window
+  (`0.1.5-alpha.1`, `0.1.5-alpha.2`, `0.1.5-rc.1`), the window that ships the
+  DeepSeek-V4.1-Flash GA path (harness model id `deepseek-flash`). The plugin had
+  been moved to `unlisted` by DSH STORE under
+  `DSH_LATEST_THREE_COMPATIBILITY_HOLD` because none of the three had an exact
+  record:
+  - Add `dsh.compatibility.dshReleases` exact records for all three releases
+    (`compatible`) so the fixed-Commit catalog can restore the listing.
+  - Widen `peerDependencies` for `@deepseek-ai/dsh-agent`, `@deepseek-ai/dsh-commands`,
+    `@deepseek-ai/dsh-llm`, and `@deepseek-ai/dsh-session` to accept `0.1.5-alpha.x`
+    and `0.1.5-rc.x`; add the matching `dsh.compatibility.dsh` range.
+  - Evidence: typecheck against each of the three releases (temporary installs of
+    the four harness packages), plus a full `npm run verify` with `0.1.5-rc.1`
+    installed — clear 30/30, F1=1.000, CI gate PASSED. The release gate itself
+    still runs on the locked `0.1.0-rc.6` surface, so the plugin keeps building
+    against its oldest supported Harness.
+  - Sync README target Harness (`0.1.5-rc.1`) and the Git-install version pin
+    to `0.11.4`.
+  - No runtime behavior change; existing `use`/`verify`/`ignore` decisions and
+    backtest scenarios remain unchanged.
+
 ## 0.11.3 - 2026-09-08
 
 - Compatibility/listing release for DSH STORE (AI-Scarlett/DSH-Store#636):
