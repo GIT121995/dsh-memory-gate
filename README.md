@@ -24,7 +24,7 @@ over time — all auditable, bounded (≤3 claims / 1200 chars by default),
 no extra model call. (Local SQLite + FTS5 storage; no embeddings, no
 external memory API.)
 
-当前版本：`0.11.4`。目标 Harness：`0.1.5-rc.1`（兼容 `0.1.0-rc.6` 起的 Harness），Node.js `>=22.5`。
+当前版本：`0.12.0`。目标 Harness：`0.1.5-rc.1`（兼容 `0.1.0-rc.6` 起的 Harness），Node.js `>=22.5`。
 
 ## v1 能力
 
@@ -72,7 +72,7 @@ dsh web
 也可以用 Git 地址安装并锁定版本：
 
 ```bash
-dsh plugin --profile web add git+https://github.com/GIT121995/dsh-memory-gate.git#v0.11.4
+dsh plugin --profile web add git+https://github.com/GIT121995/dsh-memory-gate.git#v0.12.0
 ```
 
 卸载：
@@ -117,7 +117,10 @@ dsh plugin --profile web remove dsh-memory-gate
 
 会话回挖（方案 B）：会话首轮自动扫描**同一工作区**的历史 session 日志，补提取
 其中声明过的记忆 cue，挖进 workspace 作用域——不串到别的项目。每会话只跑一次，
-`autoMineWorkspace: false` 可关，`mineMaxSessions` 限制扫描文件数。
+`autoMineWorkspace: false` 可关，`mineMaxSessions` 限制扫描文件数。日志按
+session 格式的分代命名读取：v0 是 `session.jsonl[.zstd]`，v3 起是
+`session.vN.jsonl[.zstd]`；每个会话只读版本最高的 generation（与持久化后端
+一致），迁移前的旧副本不会被重复回挖。
 
 成本分级：`use`（放心用）拿全宽，`verify`（待核验）单条最多 `verifyMaxChars`
 字符——敢用才配多花。滚动窗口（`budgetWindowTurns` 回合）内注入超
@@ -151,7 +154,8 @@ dsh plugin --profile web remove dsh-memory-gate
 `/memory mode` 只修改当前进程；重启后回到 Profile 配置。`forget` 是可审计
 的 tombstone，不会物理删除历史记录。
 
-日志回挖（`/memory mine`）：扫描历史 session 日志，补提取实时提取器漏掉的
+日志回挖（`/memory mine`）：扫描历史 session 日志（含 v3 的
+`session.vN.jsonl[.zstd]` 与明文编码），补提取实时提取器漏掉的
 记忆 cue（如句中的「记住…」），以 heuristic 低置信 + `mined` 标签存入全局
 作用域——宁缺毋滥，挖出来的也要过 CBDC 裁决、可由你反馈校准。
 

@@ -13,7 +13,12 @@ export interface MineScanResult {
     scannedFiles: number;
 }
 /**
- * 扫描 sessionsRoot 下所有 `session.jsonl.zstd`，回挖候选记忆。
+ * 解析规范 generation 文件名对应的格式版本。
+ * @returns v0 为 `0`；`session.vN.jsonl[.zstd]` 为 `N`；非规范名返回 `undefined`。
+ */
+export declare function parseLogGeneration(filename: string): number | undefined;
+/**
+ * 扫描 sessionsRoot 下所有会话日志（每个会话取最高 generation），回挖候选记忆。
  * 全程 fail-open：任何读/解压失败都跳过，绝不抛错。
  */
 export declare function mineSessions(sessionsRoot: string, maxSessions: number): MineScanResult;

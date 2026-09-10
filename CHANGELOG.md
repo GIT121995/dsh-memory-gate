@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.12.0 - 2026-09-10
+
+- Session-log mining follows the harness session-format generations, so mining
+  keeps working after the DSH 0.1.5 session-format V3 upgrade (behavior change):
+  - Recognize canonical generation filenames — v0 keeps `session.jsonl[.zstd]`,
+    later generations are `session.v<N>.jsonl[.zstd]`. Non-canonical names
+    (uppercase, leading zeros, an explicit `v0` tag, temp files) are ignored.
+  - Read only the highest generation inside each session directory, matching the
+    persistence backend's own selection: a migrated session is never mined from
+    its stale pre-migration copy, and it is only counted/scanned once.
+  - Also read plaintext logs (`compression: 'none'`), not just Zstandard frames.
+  - Extraction itself is unchanged: cue phrases, claim kinds, heuristic origin,
+    `mined` tags and scopes stay as they were, and the V3 `user/message` envelope
+    plus header `cwd` are unchanged, so workspace matching behaves as before.
+  - Verified: unit tests for V3 discovery, highest-generation selection, plaintext
+    logs, workspace matching and non-canonical-name rejection; a real
+    `session.v3.jsonl.zstd` written by DSH 0.1.5-rc.1 is discovered, decompressed
+    and cwd-matched; `npm run verify` passes (clear 30/30, F1=1.000).
+  - Sync README version, Git-install pin and the mining description to `0.12.0`.
+
 ## 0.11.4 - 2026-09-10
 
 - Compatibility/listing release for the official latest-three DSH window

@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { zstdCompressSync } from 'node:zlib'
 
-import { mineClaims, mineSessionLog, mineWorkspaceSessions, sessionWorkspaceKey, workspaceScopeKey, MemoryService, MemoryRepository } from '../lib/index.js'
+import { mineClaims, mineSessionLog, mineSessions, mineWorkspaceSessions, parseLogGeneration, sessionWorkspaceKey, workspaceScopeKey, MemoryService, MemoryRepository } from '../lib/index.js'
 
 test('mineClaims 捕获非句首的记忆 cue', () => {
   const claims = mineClaims('对了，请记住 我偏好简洁中文回答')
@@ -45,14 +45,27 @@ test('sessionWorkspaceKey 从 session 事件读 cwd 算 workspace 键', () => {
   assert.equal(sessionWorkspaceKey('{"type":"turn/start"}\n'), undefined)
 })
 
-function writeSession(sessionsRoot, workspaceDir, sessionDir, cwd, userText) {
-  const dir = join(sessionsRoot, workspaceDir, sessionDir)
+function writeLog(root, workspaceDir, sessionDir, filename, events) {
+  const dir = join(root, workspaceDir, sessionDir)
   mkdirSync(dir, { recursive: true })
-  const jsonl = [
-    JSON.stringify({ type: 'session', cwd }),
-    JSON.stringify({ type: 'user/message', data: { content: [{ type: 'text', text: userText }], source: { kind: 'user' } } }),
-  ].join('\n')
-  writeFileSync(join(dir, 'session.jsonl.zstd'), zstdCompressSync(Buffer.from(jsonl)))
+  const jsonl = events.map((event) => JSON.stringify(event)).join('\n')
+  const bytes = Buffer.from(jsonl)
+  writeFileSync(join(dir, filename), filename.endsWith('.zstd') ? zstdCompressSync(bytes) : bytes)
+}
+
+function writeSession(sessionsRoot, workspaceDir, sessionDir, cwd, userText) {
+  writeLog(sessionsRoot, workspaceDir, sessionDir, 'session.jsonl.zstd', [
+    { type: 'session', cwd },
+    { type: 'user/message', data: { content: [{ type: 'text', text: userText }], source: { kind: 'user' } } },
+  ])
+}
+
+/** 新版 harness（0.1.5+）的 V3 日志：文件名带 generation、header 多两个字段。 */
+function writeV3Session(sessionsRoot, workspaceDir, sessionDir, cwd, userText) {
+  writeLog(sessionsRoot, workspaceDir, sessionDir, 'session.v3.jsonl.zstd', [
+    { type: 'session', version: 3, id: sessionDir, createdAt: 1, cwd, isSeeded: false, delegationDepth: 0 },
+    { type: 'user/message', data: { content: [{ type: 'text', text: userText }], source: { kind: 'user' }, role: 'user', id: 'x' } },
+  ])
 }
 
 test('mineWorkspaceSessions 只回挖指定 workspace 的日志', () => {
@@ -63,6 +76,80 @@ test('mineWorkspaceSessions 只回挖指定 workspace 的日志', () => {
   assert.equal(result.claims.length, 1)
   assert.ok(result.claims[0].content.includes('项目A'))
   assert.ok(!result.claims[0].content.includes('项目B'))
+})
+
+test('parseLogGeneration 只认规范 generation 文件名', () => {
+  assert.equal(parseLogGeneration('session.jsonl.zstd'), 0)
+  assert.equal(parseLogGeneration('session.jsonl'), 0)
+  assert.equal(parseLogGeneration('session.v3.jsonl.zstd'), 3)
+  assert.equal(parseLogGeneration('session.v12.jsonl'), 12)
+  for (const bad of [
+    'session.v0.jsonl.zstd', // 显式 v0 标记不是规范名
+    'session.v01.jsonl.zstd', // 前导零
+    'session.V3.jsonl.zstd', // 大写
+    'session.v3.jsonl.zstd.tmp', // 临时文件
+    'session.jsonl.zstd.bak',
+    'session.lock',
+    'other.v3.jsonl.zstd',
+  ]) {
+    assert.equal(parseLogGeneration(bad), undefined, `${bad} 不应被认作规范 generation`)
+  }
+})
+
+test('mineSessions 回挖 V3 日志（session.v3.jsonl.zstd）', () => {
+  const root = mkdtempSync(join(tmpdir(), 'mine-v3-'))
+  writeV3Session(root, 'wsA', 's1', '/proj/a', '记住 项目A用pnpm构建')
+  const result = mineSessions(root, 10)
+  assert.equal(result.scannedFiles, 1)
+  assert.equal(result.claims.length, 1)
+  assert.ok(result.claims[0].content.includes('项目A'))
+})
+
+test('mineSessions 每个会话只读最高 generation，不回挖迁移前的旧副本', () => {
+  const root = mkdtempSync(join(tmpdir(), 'mine-gen-'))
+  writeSession(root, 'wsA', 's1', '/proj/a', '记住 旧副本里的过期记忆')
+  writeV3Session(root, 'wsA', 's1', '/proj/a', '记住 迁移后的最新记忆')
+  const result = mineSessions(root, 10)
+  assert.equal(result.scannedFiles, 1, '每个会话只应被扫一次')
+  assert.equal(result.claims.length, 1)
+  assert.ok(result.claims[0].content.includes('最新记忆'))
+  assert.ok(!result.claims[0].content.includes('过期记忆'))
+})
+
+test('mineSessions 支持 compression:none 的明文 generation', () => {
+  const root = mkdtempSync(join(tmpdir(), 'mine-plain-'))
+  writeLog(root, 'wsA', 's1', 'session.v3.jsonl', [
+    { type: 'session', version: 3, cwd: '/proj/a', isSeeded: false },
+    { type: 'user/message', data: { content: [{ type: 'text', text: '以后请始终用中文回答' }], source: { kind: 'user' } } },
+  ])
+  const result = mineSessions(root, 10)
+  assert.equal(result.scannedFiles, 1)
+  assert.equal(result.claims.length, 1)
+  assert.ok(result.claims[0].content.includes('中文回答'))
+})
+
+test('mineWorkspaceSessions 用 V3 header 的 cwd 匹配 workspace', () => {
+  const root = mkdtempSync(join(tmpdir(), 'mine-v3-ws-'))
+  writeV3Session(root, 'wsA', 's1', '/proj/a', '记住 项目A用pnpm构建')
+  writeV3Session(root, 'wsB', 's2', '/proj/b', '记住 项目B用make构建')
+  const result = mineWorkspaceSessions(root, workspaceScopeKey('/proj/a'), 10)
+  assert.equal(result.claims.length, 1)
+  assert.ok(result.claims[0].content.includes('项目A'))
+  assert.ok(!result.claims[0].content.includes('项目B'))
+})
+
+test('mineSessions 跳过非规范文件名与损坏日志（fail-open）', () => {
+  const root = mkdtempSync(join(tmpdir(), 'mine-bad-'))
+  writeLog(root, 'wsA', 's1', 'session.v0.jsonl.zstd', [
+    { type: 'session', cwd: '/proj/a' },
+    { type: 'user/message', data: { content: [{ type: 'text', text: '记住 不应被读到' }], source: { kind: 'user' } } },
+  ])
+  const broken = join(root, 'wsA', 's2')
+  mkdirSync(broken, { recursive: true })
+  writeFileSync(join(broken, 'session.v3.jsonl.zstd'), Buffer.from('not a zstd frame'))
+  const result = mineSessions(root, 10)
+  assert.equal(result.scannedFiles, 1, '非规范名不计入，损坏的规范文件计入一次扫描')
+  assert.equal(result.claims.length, 0)
 })
 
 test('mineWorkspaceOnce 每会话只挖一次、挖进 workspace 作用域', () => {
