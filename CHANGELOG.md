@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.13.1 - 2026-10-08
+
+- Compatibility/listing release for the official latest-three DSH window
+  (`0.2.0-rc.1`, `0.2.0-rc.2`, `0.2.1-alpha.1`):
+  - Add exact `dsh.compatibility.dshReleases` records (`compatible`) for the
+    three releases, widen `dsh.compatibility.dsh` and the four harness
+    `peerDependencies` ranges to accept `0.2.0-rc.x` / `0.2.1-alpha.1`, and
+    extend the cordis peer range with `^4.0.5-alpha.1` for the 0.2.1 window.
+  - Adapt injected-message provenance to the 0.2 message-source contract:
+    `@deepseek-ai/dsh-llm` 0.2 removed the shared catch-all `plugin` kind, so
+    the plugin now declares its own `MessageSourceMap` kind through declaration
+    merging — `{ kind: 'dsh-memory-gate', form: 'recall' }` in
+    `src/message-source.ts`. The 0.1.x map is merge-extensible the same way,
+    so one code path compiles against both windows, and consumers that do not
+    know the kind fall through to opaque content (the documented behavior for
+    unknown producers). `docs/architecture.md` updated.
+  - Evidence: typecheck plus a full `npm run verify` in a temporary checkout
+    per release (cordis + the four harness packages installed at the matching
+    versions) — 61 tests, clear backtest scenarios 33/33, F1 = 1.000 for each
+    of the three; the release gate still runs on the locked `0.1.0-rc.6`
+    surface (same 61 tests, 33/33, F1 = 1.000), so the plugin keeps building
+    against its oldest supported Harness. Runtime verification on 0.2.x was
+    not performed on this machine; the runtime baseline remains `0.1.5-rc.1`.
+  - No behavior change: supersession policy, retrieval, thresholds and
+    backtest scenarios are unchanged from 0.13.0.
+  - Sync README compatibility window and Git-install pin to `0.13.1`.
+
 ## 0.13.0 - 2026-10-08
 
 - Supersession no longer decides from bare 60% term overlap; it now requires a

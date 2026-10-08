@@ -126,8 +126,13 @@ Risk 基线按 Claim kind 区分，再叠加置信度不确定性和 harmful 历
 人类消息时运行。召回内容用 `createUserMessage` 生成：
 
 ```ts
-source: { kind: 'plugin', plugin: 'dsh-memory-gate', form: 'recall' }
+source: { kind: 'dsh-memory-gate', form: 'recall' }
 ```
+
+dsh-llm 0.2 起取消共享的 `plugin` 来源，改由各生产者通过声明合并声明自己的
+`kind`；`src/message-source.ts` 以此方式注册插件的 kind，并保留 `form: 'recall'`
+（内容类别：从历史会话中提取的材料）。0.1.x 的 `MessageSourceMap` 同样可合并
+扩展，因此同一份代码可编译于两个兼容窗口。
 
 注入文本声明其是用户记忆而非系统指令，并转义尖括号。任何检索、策略、审计
 或数据库异常都返回原消息数组，保证 Agent fail-open。数据库在启动时无法打开

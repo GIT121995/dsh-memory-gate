@@ -5,6 +5,7 @@ import type { Session, SessionEvent } from '@deepseek-ai/dsh-session'
 
 import { registerMemoryCommand } from './commands.js'
 import { isHumanUserMessage, messageText } from './message-text.js'
+import { MEMORY_MESSAGE_SOURCE } from './message-source.js'
 import { sessionScopeKey, workspaceScopeKey } from './scope.js'
 import { MemoryService } from './service.js'
 
@@ -99,7 +100,7 @@ export function injectRecall(
     if (!recall) return { kind: 'enter', messages }
     const memoryMessage = createUserMessage({
       content: [{ type: 'text', text: recall.text }],
-      source: { kind: 'plugin', plugin: 'dsh-memory-gate', form: 'recall' },
+      source: MEMORY_MESSAGE_SOURCE,
     })
     service.repository.recordInjection(recall.runId, sessionId, service.mode, recall.claimIds, String(memoryMessage.id))
     return { kind: 'enter', messages: [...messages, memoryMessage] }
