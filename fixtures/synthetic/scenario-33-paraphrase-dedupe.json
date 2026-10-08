@@ -1,0 +1,26 @@
+{
+  "schema": "1.0",
+  "source": "synthetic",
+  "scenario_id": "paraphrase-still-supersedes",
+  "query": "项目代码在哪个目录",
+  "scopes": ["global"],
+  "claim_store": [
+    {
+      "kind": "fact",
+      "scope": "global",
+      "content": "项目代码位于 /home/ubuntu/dsh 目录",
+      "origin": "explicit"
+    },
+    {
+      "kind": "fact",
+      "scope": "global",
+      "content": "项目代码位于 /home/ubuntu/dsh 文件夹",
+      "origin": "explicit"
+    }
+  ],
+  "golden": {
+    "inject": [1],
+    "expected_action": "use",
+    "hard": false
+  }
+}

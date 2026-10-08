@@ -1,0 +1,26 @@
+{
+  "schema": "1.0",
+  "source": "synthetic",
+  "scenario_id": "conditional-branches-keep-both",
+  "query": "How to recover SQLite WAL after SQLITE_BUSY",
+  "scopes": ["global"],
+  "claim_store": [
+    {
+      "kind": "procedure",
+      "scope": "global",
+      "content": "For SQLite WAL reservations using stock and request_id, recover SQLITE_BUSY at BEGIN IMMEDIATE by waiting within the busy_timeout budget; retry BEGIN after the competing writer commits.",
+      "origin": "explicit"
+    },
+    {
+      "kind": "procedure",
+      "scope": "global",
+      "content": "For SQLite WAL reservations using stock and request_id, recover SQLITE_BUSY_SNAPSHOT at UPDATE by rolling back the read transaction; retry BEGIN and re-read stock after the competing writer commits.",
+      "origin": "explicit"
+    }
+  ],
+  "golden": {
+    "inject": [0, 1],
+    "expected_action": "use",
+    "hard": false
+  }
+}

@@ -7,19 +7,24 @@ import type {
   AuthorityDecision,
   Belief,
   Claim,
+  ClaimOrigin,
   ConsumptionOutcome,
   Evidence,
   MemoryStats,
   NewClaim,
   SearchCandidate,
 } from './contracts.js'
+import { decideSupersede } from './relations.js'
 import { buildFtsQuery, extractTerms, mergeLearnedTerms, termOverlap } from './text.js'
 
 type SqlValue = string | number | bigint | null | Uint8Array
 type Row = Record<string, SqlValue>
 
 const SCHEMA_VERSION = 3
-/** 相似去重阈值（James Ross 的「60% 重叠 → 更新而非新建」）。 */
+/**
+ * 相似去重的最低词项重叠阈值。达到阈值只代表「候选」；是否真的取代由
+ * decideSupersede() 决定——适用条件不同（判别词两侧各自独有）时两条并存。
+ */
 const SUPERSEDE_OVERLAP_THRESHOLD = 0.6
 const CLAIM_TERM_LIMIT = 80
 const QUERY_TERM_LIMIT = 24
@@ -68,7 +73,7 @@ export class MemoryRepository {
     if (existing) return { claim: rowToClaim(existing), created: false }
 
     const terms = extractTerms(`${content} ${uniqueTags(input.tags ?? []).join(' ')}`, CLAIM_TERM_LIMIT)
-    const supersedesId = this.findSupersedeTarget(input.scopeKey, terms)
+    const supersedesId = this.findSupersedeTarget(input.scopeKey, terms, content, input.origin)
 
     const now = Date.now()
     const claim: Claim = {
@@ -436,12 +441,13 @@ export class MemoryRepository {
   }
 
   /**
-   * 定期 consolidation：扫描活跃 claim，把同一作用域内重叠度 ≥ 阈值的
-   * 近重复项合并（较旧的标记为 superseded、指向较新的）。返回被合并的条数。
+   * 定期 consolidation：扫描活跃 claim，对同一作用域内重叠度 ≥ 阈值的
+   * 近重复项再跑一次 decideSupersede()——只有命题同一/显式替换才合并
+   * （较旧的标记为 superseded、指向较新的），条件不同的条目保持并存。
    */
   consolidate(): number {
     const rows = this.db
-      .prepare("SELECT id, scope_key, terms_json, updated_at FROM claims WHERE state = 'active' ORDER BY scope_key, updated_at DESC")
+      .prepare("SELECT id, scope_key, content, origin, terms_json, updated_at FROM claims WHERE state = 'active' ORDER BY scope_key, updated_at DESC")
       .all() as Row[]
     const byScope = new Map<string, Row[]>()
     for (const row of rows) {
@@ -459,6 +465,11 @@ export class MemoryRepository {
             const older = group[j]!
             const overlap = termOverlap(parseJsonArray(newer.terms_json), parseJsonArray(older.terms_json))
             if (overlap < SUPERSEDE_OVERLAP_THRESHOLD) continue
+            const decision = decideSupersede(
+              { content: String(newer.content), origin: String(newer.origin) as ClaimOrigin },
+              { content: String(older.content), origin: String(older.origin) as ClaimOrigin },
+            )
+            if (!decision.supersede) continue
             // 旧 claim 标记 superseded；新 claim（newer）记录「我取代了 older」——与 remember() 方向一致
             this.db.prepare("UPDATE claims SET state = 'superseded', updated_at = ? WHERE id = ? AND state = 'active'").run(Date.now(), String(older.id))
             this.db.prepare('UPDATE claims SET supersedes = ? WHERE id = ?').run(String(older.id), String(newer.id))
@@ -605,20 +616,28 @@ export class MemoryRepository {
     })
   }
 
-  /** 在相同作用域内找一条与新内容足够相似的活跃 claim（供 supersede 用）。 */
-  private findSupersedeTarget(scopeKey: string, terms: string[]): string | undefined {
+  /**
+   * 在相同作用域内找一条**可以真正取代**的活跃 claim：先满足最低词项重叠，
+   * 再由 decideSupersede() 判断是否命题同一或显式替换；若最相似的候选
+   * 只是「同主题、不同适用条件」，返回 undefined（两条并存）。
+   */
+  private findSupersedeTarget(scopeKey: string, terms: string[], content: string, origin: ClaimOrigin): string | undefined {
     if (!terms.length) return undefined
     const rows = this.db
-      .prepare("SELECT id, terms_json FROM claims WHERE scope_key = ? AND state = 'active' ORDER BY updated_at DESC LIMIT 200")
+      .prepare("SELECT id, content, origin, terms_json FROM claims WHERE scope_key = ? AND state = 'active' ORDER BY updated_at DESC LIMIT 200")
       .all(scopeKey) as Row[]
-    let best: { id: string; overlap: number } | undefined
+    let best: { id: string; overlap: number; supersede: boolean } | undefined
     for (const row of rows) {
       const overlap = termOverlap(terms, parseJsonArray(row.terms_json))
-      if (overlap >= SUPERSEDE_OVERLAP_THRESHOLD && (best === undefined || overlap > best.overlap)) {
-        best = { id: String(row.id), overlap }
-      }
+      if (overlap < SUPERSEDE_OVERLAP_THRESHOLD) continue
+      if (best !== undefined && overlap <= best.overlap) continue
+      const decision = decideSupersede(
+        { content, origin },
+        { content: String(row.content), origin: String(row.origin) as ClaimOrigin },
+      )
+      best = { id: String(row.id), overlap, supersede: decision.supersede }
     }
-    return best?.id
+    return best?.supersede ? best.id : undefined
   }
 
   /**

@@ -46,8 +46,9 @@ export declare class MemoryRepository {
         createdAt: number;
     }>;
     /**
-     * 定期 consolidation：扫描活跃 claim，把同一作用域内重叠度 ≥ 阈值的
-     * 近重复项合并（较旧的标记为 superseded、指向较新的）。返回被合并的条数。
+     * 定期 consolidation：扫描活跃 claim，对同一作用域内重叠度 ≥ 阈值的
+     * 近重复项再跑一次 decideSupersede()——只有命题同一/显式替换才合并
+     * （较旧的标记为 superseded、指向较新的），条件不同的条目保持并存。
      */
     consolidate(): number;
     private count;
@@ -57,7 +58,11 @@ export declare class MemoryRepository {
     private migrate;
     /** Schema v3：相似去重的 supersedes 引用列。 */
     private upgradeToV3;
-    /** 在相同作用域内找一条与新内容足够相似的活跃 claim（供 supersede 用）。 */
+    /**
+     * 在相同作用域内找一条**可以真正取代**的活跃 claim：先满足最低词项重叠，
+     * 再由 decideSupersede() 判断是否命题同一或显式替换；若最相似的候选
+     * 只是「同主题、不同适用条件」，返回 undefined（两条并存）。
+     */
     private findSupersedeTarget;
     /**
      * Schema v2: write-time trigger terms, learned feedback terms, and query

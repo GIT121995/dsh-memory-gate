@@ -1,5 +1,34 @@
 # Changelog
 
+## 0.13.0 - 2026-10-08
+
+- Supersession no longer decides from bare 60% term overlap; it now requires a
+  same-proposition signal (behavior change; reported against 0.12.0 by
+  `Dedale-Project` in deepseek-ai/deepseek-harness Discussion #1345):
+  - New `decideSupersede()` keeps the 60% overlap threshold as a *candidate*
+    gate only. The older claim is marked `superseded` only when the new claim
+    either carries explicit replacement intent (「不再/改为/改用/换成/取代/
+    替换/废除/作废/弃用」, `instead of`, `no longer`, `replace`, `switch to`,
+    `supersede`, `deprecate`) or the two claims share all structured
+    discriminators (identifiers, paths, numbers/versions, quoted literals).
+  - When both sides carry their own discriminators, applicability conditions
+    differ and **both claims stay active** — the reported case
+    (`BEGIN IMMEDIATE`/`busy_timeout` vs `UPDATE`/`SQLITE_BUSY_SNAPSHOT`,
+    70% term overlap) is no longer silently collapsed into one branch.
+  - Information-loss guard: a new claim that drops an old discriminator
+    (for example `busy_timeout`) no longer replaces the older claim.
+  - Origin guard: heuristic (auto-mined) claims never supersede explicit
+    user claims.
+  - `consolidate()` runs the same policy, so manual merges cannot bypass it.
+  - Backtest fixtures: `conditional-branches-keep-both` (both branches must be
+    injected), `explicit-replacement-supersedes`, `paraphrase-still-supersedes`;
+    unit tests for intent detection, discriminator extraction, refinement,
+    information loss and the origin guard.
+  - Verified: `npm run verify` passes — 61 tests, clear scenarios 33/33,
+    F1=1.000, CI gate PASSED.
+  - README supersession contract, test/backtest counts, Git-install pin and
+    version updated to `0.13.0`.
+
 ## 0.12.0 - 2026-09-10
 
 - Session-log mining follows the harness session-format generations, so mining

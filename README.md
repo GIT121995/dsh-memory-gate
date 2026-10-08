@@ -24,7 +24,7 @@ over time — all auditable, bounded (≤3 claims / 1200 chars by default),
 no extra model call. (Local SQLite + FTS5 storage; no embeddings, no
 external memory API.)
 
-当前版本：`0.12.0`。目标 Harness：`0.1.5-rc.1`（兼容 `0.1.0-rc.6` 起的 Harness），Node.js `>=22.5`。
+当前版本：`0.13.0`。目标 Harness：`0.1.5-rc.1`（兼容 `0.1.0-rc.6` 起的 Harness），Node.js `>=22.5`。
 
 ## v1 能力
 
@@ -35,9 +35,12 @@ external memory API.)
 - **使用后学习**：`/memory ok`（或 `feedback <#n> helped`）把当次查询的
   区分性词项学进触发词（只存词项、不存查询原文），harmful/stale 降低
   置信度并触发隔离——越用越准，`/memory explain` 全程可审计。
-- **近重复合并**：写入时新记忆与同作用域已有词项重叠 ≥ 60% 时，旧条目
-  自动标 `superseded`、新记忆记录取代关系；`/memory consolidate` 可手动
-  全库合并，避免"相近表达"堆成重复记忆。
+- **近重复合并（有条件的取代）**：写入时同作用域词项重叠 ≥ 60% 只算候选；
+  只有命题同一（无各自独有的判别词差异）或显式表达替换意图
+  （「不再 / 改为 / 取代 / instead of / no longer」）时，旧条目才标
+  `superseded`、新记忆记录取代关系。适用条件不同（如
+  `BEGIN IMMEDIATE` vs `UPDATE`）则两条并存；自动挖掘的 heuristic 记忆
+  不能顶掉显式记忆。`/memory consolidate` 使用同一判据。
 - **三种运行模式**：`shadow`（只审计零注入）、`assist`（默认，注入 use +
   标出 verify）、`enforce`（只注入高置信）——按场景切换"怎么用"。
 - 双通道召回：少量可信全局偏好/约束组成记忆胶囊，其余记忆经词项触发。
@@ -72,7 +75,7 @@ dsh web
 也可以用 Git 地址安装并锁定版本：
 
 ```bash
-dsh plugin --profile web add git+https://github.com/GIT121995/dsh-memory-gate.git#v0.12.0
+dsh plugin --profile web add git+https://github.com/GIT121995/dsh-memory-gate.git#v0.13.0
 ```
 
 卸载：
@@ -159,9 +162,14 @@ session 格式的分代命名读取：v0 是 `session.jsonl[.zstd]`，v3 起是
 记忆 cue（如句中的「记住…」），以 heuristic 低置信 + `mined` 标签存入全局
 作用域——宁缺毋滥，挖出来的也要过 CBDC 裁决、可由你反馈校准。
 
-相似去重（supersede）：写入时若与同作用域已有记忆词项重叠 ≥ 60%，旧的自动
-标记为 `superseded`、新记忆记录取代关系——相近表达不再堆成近重复条目。
-`/memory consolidate` 可手动触发一次全库合并。
+相似去重（supersede）：写入时与同作用域已有记忆词项重叠 ≥ 60% 只作为
+候选；是否真的取代由两个信号决定——新记忆显式表达替换意图（「不再 /
+改为 / 取代 / instead of / no longer」），或两条记忆没有任何各自独有的
+判别词（标识符、路径、数字、引号字面量）。两侧各带自己的判别词时，
+说明适用条件不同（例如 `BEGIN IMMEDIATE`/`busy_timeout` 与
+`UPDATE`/`SQLITE_BUSY_SNAPSHOT`），两条都保持 `active`，交给检索和
+`use/verify/ignore` 按语境处理；新记忆漏掉旧记忆独有的判别词（信息损失）
+或来源是 heuristic 时，也不会自动取代。`/memory consolidate` 使用同一判据。
 
 反馈（`feedback` / `ok`）是记忆学习的入口：`helped` 会把当次查询的区分性
 词项学进该条记忆的触发词，让以后的换说法也能命中；`harmful`/`stale` 会
@@ -179,8 +187,8 @@ session 格式的分代命名读取：v0 是 `session.jsonl[.zstd]`，v3 起是
 ```bash
 npm install
 npm run check          # 类型检查 + 构建
-npm test               # 21 个单元/集成测试
-npm run backtest       # 决策层回测：30 场景四腿对照（gate/top-3/random/shadow）
+npm test               # 61 个单元/集成测试
+npm run backtest       # 决策层回测：33 场景四腿对照（gate/top-3/random/shadow）
 npm run result         # 结果层：注入采纳度 / 成本 / 效果分
 npm run observe <log>  # 轨迹观测：对真实 session 日志量采纳度
 npm pack --dry-run

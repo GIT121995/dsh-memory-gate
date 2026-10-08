@@ -1,0 +1,26 @@
+{
+  "schema": "1.0",
+  "source": "synthetic",
+  "scenario_id": "explicit-replacement-supersedes",
+  "query": "部署怎么管理进程",
+  "scopes": ["global"],
+  "claim_store": [
+    {
+      "kind": "procedure",
+      "scope": "global",
+      "content": "部署用 pm2 管理进程",
+      "origin": "explicit"
+    },
+    {
+      "kind": "procedure",
+      "scope": "global",
+      "content": "部署不再用 pm2，改为 systemd 管理进程",
+      "origin": "explicit"
+    }
+  ],
+  "golden": {
+    "inject": [1],
+    "expected_action": "use",
+    "hard": false
+  }
+}

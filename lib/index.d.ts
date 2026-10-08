@@ -9,6 +9,8 @@ export { decideAuthority } from './authority.js';
 export { extractDurableClaims } from './extractor.js';
 export { injectRecall, observeSessionEvent } from './harness.js';
 export { inspectForSecrets, redactForLog } from './redaction.js';
+export { decideSupersede, hasReplacementIntent, structuredDiscriminators } from './relations.js';
+export type { SupersedeDecision, SupersedeReason } from './relations.js';
 export { MemoryRepository } from './repository.js';
 export { sessionScopeKey, workspaceScopeKey } from './scope.js';
 export { MemoryService } from './service.js';

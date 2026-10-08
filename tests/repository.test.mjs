@@ -242,3 +242,51 @@ test('bugfix：FTS 命中的旧记忆（超 scanLimit）也能召回', () => {
     repository.close()
   }
 })
+
+test('条件不同：同主题不同适用条件的两条 procedure 并存（报告案例）', () => {
+  const repository = new MemoryRepository(':memory:')
+  try {
+    const begin = repository.remember({
+      scope: 'workspace', scopeKey: 'w1', kind: 'procedure', origin: 'explicit',
+      content: 'For SQLite WAL reservations using stock and request_id, recover SQLITE_BUSY at BEGIN IMMEDIATE by waiting within the busy_timeout budget; retry BEGIN after the competing writer commits.',
+    }).claim
+    const update = repository.remember({
+      scope: 'workspace', scopeKey: 'w1', kind: 'procedure', origin: 'explicit',
+      content: 'For SQLite WAL reservations using stock and request_id, recover SQLITE_BUSY_SNAPSHOT at UPDATE by rolling back the read transaction; retry BEGIN and re-read stock after the competing writer commits.',
+    }).claim
+    assert.equal(update.supersedes, undefined, '适用条件不同的新 claim 不应记录取代关系')
+    assert.equal(repository.getClaim(begin.id).state, 'active', '旧的条件分支不能被静默 superseded')
+    assert.equal(repository.getClaim(update.id).state, 'active')
+    const results = repository.search('recover SQLite WAL SQLITE_BUSY', ['w1'], 5)
+    const ids = results.map((c) => c.claim.id)
+    assert.ok(ids.includes(begin.id) && ids.includes(update.id), '两条条件分支都应可被召回')
+  } finally {
+    repository.close()
+  }
+})
+
+test('显式替换意图：新 claim 仍取代旧 claim', () => {
+  const repository = new MemoryRepository(':memory:')
+  try {
+    const oldClaim = repository.remember({ scope: 'global', scopeKey: 'global', kind: 'procedure', origin: 'explicit', content: '部署用 pm2 管理进程' }).claim
+    const next = repository.remember({ scope: 'global', scopeKey: 'global', kind: 'procedure', origin: 'explicit', content: '部署不再用 pm2，改为 systemd 管理进程' }).claim
+    assert.equal(next.supersedes, oldClaim.id)
+    assert.equal(repository.getClaim(oldClaim.id).state, 'superseded')
+    assert.equal(repository.getClaim(next.id).state, 'active')
+  } finally {
+    repository.close()
+  }
+})
+
+test('heuristic 新记忆不得顶掉 explicit 旧记忆', () => {
+  const repository = new MemoryRepository(':memory:')
+  try {
+    const explicit = repository.remember({ scope: 'global', scopeKey: 'global', kind: 'constraint', origin: 'explicit', content: '部署禁止使用 pm2 管理进程' }).claim
+    const mined = repository.remember({ scope: 'global', scopeKey: 'global', kind: 'procedure', origin: 'heuristic', content: '部署不再用 pm2，改为 systemd 管理进程' }).claim
+    assert.equal(mined.supersedes, undefined)
+    assert.equal(repository.getClaim(explicit.id).state, 'active')
+    assert.equal(repository.getClaim(mined.id).state, 'active')
+  } finally {
+    repository.close()
+  }
+})
