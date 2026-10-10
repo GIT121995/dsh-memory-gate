@@ -1,0 +1,26 @@
+{
+  "schema": "1.0",
+  "source": "synthetic",
+  "scenario_id": "conditional-branches-cjk-known-gap",
+  "query": "处理库存预留事务时，遇到写入锁占用或快照过期该怎么恢复",
+  "scopes": ["global"],
+  "claim_store": [
+    {
+      "kind": "procedure",
+      "scope": "global",
+      "content": "处理库存预留事务时，如果写入锁被其他事务占用，应在超时预算内等待并重新开始事务；只有确认成功后才能继续处理库存预留。",
+      "origin": "explicit"
+    },
+    {
+      "kind": "procedure",
+      "scope": "global",
+      "content": "处理库存预留事务时，如果读取快照已经过期，应回滚旧事务并重新读取库存；只有确认成功后才能继续处理库存预留。",
+      "origin": "explicit"
+    }
+  ],
+  "golden": {
+    "inject": [0, 1],
+    "expected_action": "use",
+    "hard": true
+  }
+}
