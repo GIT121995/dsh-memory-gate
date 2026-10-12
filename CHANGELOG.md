@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.13.2 - 2026-10-12
+
+- Compatibility record for the official latest-three window moving to
+  `0.2.0-rc.2`, `0.2.1-alpha.1`, `0.2.1-alpha.2` (no behavior change):
+  - Add the exact `dsh.compatibility.dshReleases` record for `0.2.1-alpha.2`
+    (`compatible`). The existing `^0.2.1-alpha.1` ranges in `dsh.compatibility.dsh`
+    and the four harness `peerDependencies` already accept `0.2.1-alpha.2`
+    (same 0.2.1 prerelease tuple), so no range change was needed.
+  - Evidence: temporary checkout with cordis `4.0.5-alpha.1` plus
+    `@deepseek-ai/dsh-agent`, `dsh-commands`, `dsh-llm` and `dsh-session` at
+    `0.2.1-alpha.2`; a full `npm run verify` passes — 61 tests, clear backtest
+    scenarios 33/33, F1 = 1.000. The release gate itself still runs on the
+    locked `0.1.0-rc.6` surface with the same result.
+  - No behavior change: supersession policy, retrieval, thresholds and
+    backtest scenarios are unchanged from 0.13.1.
+  - Sync README compatibility window and Git-install pin to `0.13.2`.
+
 ## 0.13.1 - 2026-10-08
 
 - Compatibility/listing release for the official latest-three DSH window
