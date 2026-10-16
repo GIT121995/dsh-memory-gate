@@ -1,9 +1,17 @@
+import { homedir } from 'node:os'
+import { join } from 'node:path'
+
 import Schema from '@deepseek-ai/schemastery'
 
 import type { MemoryMode } from './contracts.js'
 
 export interface Config {
-  databasePath: string
+  /**
+   * Absolute path to the private SQLite database. Optional: when omitted the
+   * plugin resolves `<DSH home>/memory/cbdc.sqlite` at runtime, so the bundle
+   * Patch stays a no-evaluation literal document.
+   */
+  databasePath?: string
   mode: MemoryMode
   automaticExtraction: boolean
   candidateLimit: number
@@ -31,10 +39,22 @@ export interface Config {
   mineMaxSessions?: number
 }
 
+/** 校验后的配置：databasePath 一定存在。 */
+export type ResolvedConfig = Config & { databasePath: string }
+
+/**
+ * 默认数据库路径：`<DSH home>/memory/cbdc.sqlite`。
+ * DSH home 取 `DSH_HOME`，未设置时退回 `~/.dsh`；与旧 Patch 的
+ * `dshHomePath('memory/cbdc.sqlite')` 指向同一位置，存量数据不迁移。
+ */
+export function defaultDatabasePath(): string {
+  const home = process.env.DSH_HOME?.trim()
+  return join(home && home.length > 0 ? home : join(homedir(), '.dsh'), 'memory', 'cbdc.sqlite')
+}
+
 export const Config: Schema<Config> = Schema.object({
   databasePath: Schema.string()
-    .description('Absolute or profile-relative path to the private SQLite database.')
-    .required(),
+    .description('Absolute path to the private SQLite database. Defaults to <DSH home>/memory/cbdc.sqlite.'),
   mode: Schema.union(['shadow', 'assist', 'enforce'])
     .description('shadow audits only; assist labels uncertain memory; enforce injects only use decisions.')
     .default('assist'),
@@ -59,13 +79,14 @@ export const Config: Schema<Config> = Schema.object({
   mineMaxSessions: Schema.number().min(1).max(200).step(1).default(20),
 })
 
-export function validateConfig(config: Config): Config {
-  if (!config.databasePath.trim()) throw new Error('databasePath cannot be empty')
+export function validateConfig(config: Config): ResolvedConfig {
+  const databasePath = config.databasePath?.trim() ? config.databasePath.trim() : defaultDatabasePath()
+  if (!databasePath) throw new Error('databasePath cannot be empty')
   if (config.injectionLimit > config.candidateLimit) {
     throw new Error('injectionLimit cannot exceed candidateLimit')
   }
   if (config.capsuleLimit > config.candidateLimit) {
     throw new Error('capsuleLimit cannot exceed candidateLimit')
   }
-  return config
+  return { ...config, databasePath }
 }

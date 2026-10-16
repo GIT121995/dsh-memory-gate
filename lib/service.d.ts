@@ -1,4 +1,4 @@
-import type { Config } from './config.js';
+import type { ResolvedConfig } from './config.js';
 import type { Claim, ClaimKind, ClaimScope, ConsumptionOutcome, MemoryMode, RememberOptions, RetrievalResult, SearchCandidate } from './contracts.js';
 import { MemoryRepository } from './repository.js';
 export interface RecallContext {
@@ -14,7 +14,7 @@ export interface RecallInjection {
 }
 export declare class MemoryService {
     readonly repository: MemoryRepository;
-    readonly config: Config;
+    readonly config: ResolvedConfig;
     private modeValue;
     private retrievalsSincePrune;
     private injectionHistory;
@@ -22,7 +22,7 @@ export declare class MemoryService {
     private degradeReason;
     private degradeReport;
     private minedSessions;
-    constructor(repository: MemoryRepository, config: Config);
+    constructor(repository: MemoryRepository, config: ResolvedConfig);
     /** 滚动窗口（默认 20 回合）内已注入的记忆字符总数。 */
     private recentInjectionChars;
     private trackInjection;

@@ -1,4 +1,4 @@
-import type { Config } from './config.js'
+import type { ResolvedConfig } from './config.js'
 import type {
   Claim,
   ClaimKind,
@@ -41,7 +41,7 @@ export class MemoryService {
 
   constructor(
     readonly repository: MemoryRepository,
-    readonly config: Config,
+    readonly config: ResolvedConfig,
   ) {
     this.modeValue = config.mode
   }

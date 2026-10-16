@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.14.0 - 2026-10-16
+
+- DSH STORE listing remediation. No retrieval/supersession behavior change;
+  the config contract and package surface changed:
+  - The Bundle Patch is now a no-evaluation literal document:
+    `cordis.patch.yml` no longer contains `!!js dshHomePath('memory/cbdc.sqlite')`.
+    `databasePath` became optional; when omitted the plugin resolves
+    `<DSH_HOME or ~/.dsh>/memory/cbdc.sqlite` at runtime — the same path as
+    before, so existing databases stay where they are and no migration runs.
+  - `@deepseek-ai/schemastery` moved from `dependencies` to
+    `peerDependencies` (kept in `devDependencies` for local build/tests),
+    matching the DSH plugin convention that the host provides it. The
+    published package now declares no runtime dependencies.
+  - npm package surface trimmed to runtime artifacts only (`lib`, the Bundle
+    Patch, README/CHANGELOG/LICENSE, docs). `backtest/` and
+    `fixtures/synthetic/` remain in the repository for development but are no
+    longer published, and therefore leave the Store's fixed-source review
+    surface (removing the `child_process` command signal and the JSONL
+    inventory scan). Deleted the unreferenced
+    `fixtures/synthetic/session-sample.jsonl`.
+  - Evidence: `npm run verify` — 61 tests, clear backtest scenarios 33/33,
+    F1 = 1.000; `npm pack --dry-run` contains no `backtest/` or `fixtures/`
+    entries; a disposable DSH profile install confirms the peer
+    `@deepseek-ai/schemastery` resolves and the default database path is
+    unchanged.
+  - README config example (no more `!!js`) and install pin updated to
+    `0.14.0`.
+
 ## 0.13.2 - 2026-10-12
 
 - Compatibility record for the official latest-three window moving to

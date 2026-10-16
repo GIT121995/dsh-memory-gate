@@ -4,7 +4,6 @@
       inject:
         - commands
       config:
-        databasePath: !!js dshHomePath('memory/cbdc.sqlite')
         mode: assist
         automaticExtraction: true
         candidateLimit: 16

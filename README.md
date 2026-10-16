@@ -24,7 +24,7 @@ over time — all auditable, bounded (≤3 claims / 1200 chars by default),
 no extra model call. (Local SQLite + FTS5 storage; no embeddings, no
 external memory API.)
 
-当前版本：`0.13.2`。兼容 Harness：`0.1.0-rc.6` – `0.2.1-alpha.2`（`0.2.0-rc.1`、`0.2.0-rc.2`、`0.2.1-alpha.1`、`0.2.1-alpha.2` 已通过完整 `verify`；运行时验证基线为 `0.1.5-rc.1`），Node.js `>=22.5`。
+当前版本：`0.14.0`。兼容 Harness：`0.1.0-rc.6` – `0.2.1-alpha.2`（`0.2.0-rc.1`、`0.2.0-rc.2`、`0.2.1-alpha.1`、`0.2.1-alpha.2` 已通过完整 `verify`；运行时验证基线为 `0.1.5-rc.1`），Node.js `>=22.5`。
 
 ## v1 能力
 
@@ -75,7 +75,7 @@ dsh web
 也可以用 Git 地址安装并锁定版本：
 
 ```bash
-dsh plugin --profile web add git+https://github.com/GIT121995/dsh-memory-gate.git#v0.13.2
+dsh plugin --profile web add git+https://github.com/GIT121995/dsh-memory-gate.git#v0.14.0
 ```
 
 卸载：
@@ -88,8 +88,11 @@ dsh plugin --profile web remove dsh-memory-gate
 
 安装后重启正在运行的 `dsh web`。Bundle 默认写入
 `$DSH_HOME/memory/cbdc.sqlite`（文件名沿用 CBDC 机制名），并以保守 `assist`
-模式启动。每次模型调用仍只有原来的一次；插件只在本地检索，并把最多 3 条
-相关记忆放入该次调用的上下文。
+模式启动。`databasePath` 现在是可选配置：Bundle Patch 里不再使用
+`!!js dshHomePath(...)` 这类求值表达式（商店的 Patch 契约只接受字面量），
+省略时由插件在运行时解析为 `<DSH_HOME 或 ~/.dsh>/memory/cbdc.sqlite`，
+与旧默认路径完全一致，存量数据不迁移。每次模型调用仍只有原来的一次；插件
+只在本地检索，并把最多 3 条相关记忆放入该次调用的上下文。
 
 在 `$DSH_HOME/profiles/web/cordis.patch.yml` 中持久调整模式时，后置覆盖
 必须重述该插件拥有的完整配置：
@@ -97,7 +100,8 @@ dsh plugin --profile web remove dsh-memory-gate
 ```yaml
 - id: memory-gate
   config:
-    databasePath: !!js dshHomePath('memory/cbdc.sqlite')
+    # 可选：省略时运行时解析为 <DSH home>/memory/cbdc.sqlite
+    # databasePath: /absolute/path/to/cbdc.sqlite
     mode: assist
     automaticExtraction: true
     candidateLimit: 16
